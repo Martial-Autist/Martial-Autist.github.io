@@ -145,6 +145,8 @@ button.stat:active,.row:active{transform:scale(.98)}
 .tabs button{flex:1 0 auto;padding:7px 9px}
 .footer{text-align:center;color:var(--mute);font-size:12px;margin:36px 0 10px;opacity:.7;line-height:1.8}
 .linkish{background:none;border:none;color:var(--mute);font-size:12px;padding:2px 4px;text-decoration:underline dotted;cursor:pointer}
+.potedit{margin:4px 0 8px;padding:6px 10px;border:1px dashed var(--line);border-radius:10px}
+.potedit summary{cursor:pointer;color:var(--mute);font-size:13px}
 img.thumb{width:42px;height:42px;border-radius:50%;object-fit:cover;border:2px solid var(--acc2);cursor:pointer;flex:none}
 img.portrait{max-width:100%;max-height:420px;border-radius:12px;border:1px solid var(--line)}
 #toast{position:fixed;left:50%;bottom:20px;transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 14px;border-radius:10px;font-size:14px;z-index:30;display:none;max-width:90vw}
@@ -167,6 +169,7 @@ const ABN = {str:'STR',dex:'DEX',con:'CON',int:'INT',wis:'WIS',cha:'CHA'};
 const SKILLS = [['Acrobatics','dex'],['Animal Handling','wis'],['Arcana','int'],['Athletics','str'],['Deception','cha'],['History','int'],['Insight','wis'],['Intimidation','cha'],['Investigation','int'],['Medicine','wis'],['Nature','int'],['Perception','wis'],['Performance','cha'],['Persuasion','cha'],['Religion','int'],['Sleight of Hand','dex'],['Stealth','dex'],['Survival','wis']];
 const TARGETS = [['ac','AC'],['hpMax','Max HP'],['speed','Speed'],['init','Initiative'],['prof','Proficiency bonus'],['spellDC','Spell save DC'],['spellAtk','Spell attack bonus'],['spellDmg','Spell damage'],['atk','Weapon attack bonus'],['dmg','Weapon damage'],['allSaves','All saving throws'],['allChecks','All skill checks']]
   .concat(ABIL.map(a=>['score:'+a,ABN[a]+' score']))
+  .concat(ABIL.map(a=>['setscore:'+a,ABN[a]+' becomes (e.g. giant strength)']))
   .concat(ABIL.map(a=>['save:'+a,ABN[a]+' save']))
   .concat(SKILLS.map(s=>['skill:'+s[0],s[0]+' check']));
 const TNAME = Object.fromEntries(TARGETS);
@@ -243,6 +246,217 @@ async function buyTip(sku){
     await resp.complete('success'); closeSheet(); toast('Thank you! ☕ That genuinely made my day.');
   }catch(e){ if(e&&e.name!=='AbortError') toast('The tip didn\'t go through — nothing was charged.'); }
 }
+/* ---------- class resources: auto-filled from your classes, still editable ---------- */
+const lvOf=(cl,n)=>cl.filter(c=>(c.name||'').toLowerCase()===n).reduce((a,c)=>a+(Number(c.level)||0),0);
+const subOf=(cl,n)=>cl.filter(c=>(c.name||'').toLowerCase()===n).map(c=>c.sub||'').join(' ');
+const dieBy=(l,steps)=>{ let d=steps[0][1]; steps.forEach(([at,dd])=>{ if(l>=at) d=dd; }); return d; };
+const RES_DEFS=[
+ {key:'sorc',cls:'Sorcerer',name:'Sorcery Points',reset:'long',when:cl=>lvOf(cl,'sorcerer')>=2,max:cl=>lvOf(cl,'sorcerer')},
+ {key:'ki',cls:'Monk',name:'Ki Points',reset:'short',when:cl=>lvOf(cl,'monk')>=2,max:cl=>lvOf(cl,'monk')},
+ {key:'rage',cls:'Barbarian',name:'Rages',reset:'long',when:cl=>lvOf(cl,'barbarian')>=1,max:cl=>{ const b=lvOf(cl,'barbarian'); return b>=20?99:b>=17?6:b>=12?5:b>=6?4:b>=3?3:2; }},
+ {key:'cd',cls:'Cleric / Paladin',name:'Channel Divinity',reset:'short',when:cl=>lvOf(cl,'cleric')>=2||lvOf(cl,'paladin')>=3,max:cl=>{ const c=lvOf(cl,'cleric'); return Math.max(c>=18?3:c>=6?2:c>=2?1:0, lvOf(cl,'paladin')>=3?1:0); }},
+ {key:'bi',cls:'Bard',name:'Bardic Inspiration',reset:'long',when:cl=>lvOf(cl,'bard')>=1,max:()=>Math.max(1,am('cha')),die:cl=>'1'+dieBy(lvOf(cl,'bard'),[[1,'d6'],[5,'d8'],[10,'d10'],[15,'d12']]),note:'Short rest from level 5 (Font of Inspiration) — change Recovers on'},
+ {key:'sw',cls:'Fighter',name:'Second Wind',reset:'short',when:cl=>lvOf(cl,'fighter')>=1,max:()=>1},
+ {key:'as',cls:'Fighter',name:'Action Surge',reset:'short',when:cl=>lvOf(cl,'fighter')>=2,max:cl=>lvOf(cl,'fighter')>=17?2:1},
+ {key:'wild',cls:'Druid',name:'Wild Shape',reset:'short',when:cl=>lvOf(cl,'druid')>=2,max:()=>2},
+ {key:'loh',cls:'Paladin',name:'Lay on Hands',reset:'long',when:cl=>lvOf(cl,'paladin')>=1,max:cl=>5*lvOf(cl,'paladin')},
+ {key:'arec',cls:'Wizard',name:'Arcane Recovery',reset:'long',when:cl=>lvOf(cl,'wizard')>=1,max:()=>1},
+ {key:'ward',cls:'Wizard (Abjuration)',name:'Arcane Ward',reset:'long',when:cl=>lvOf(cl,'wizard')>=2&&/abjur/i.test(subOf(cl,'wizard')),max:cl=>2*lvOf(cl,'wizard')+am('int')},
+ {key:'sup',cls:'Fighter (Battle Master)',name:'Superiority Dice',reset:'short',when:cl=>lvOf(cl,'fighter')>=3&&/battle/i.test(subOf(cl,'fighter')),max:cl=>{ const f=lvOf(cl,'fighter'); return f>=15?6:f>=7?5:4; },die:cl=>'1'+dieBy(lvOf(cl,'fighter'),[[3,'d8'],[10,'d10'],[18,'d12']])},
+ {key:'psi',cls:'Fighter (Psi Warrior)',name:'Psionic Energy Dice',reset:'long',when:cl=>lvOf(cl,'fighter')>=3&&/psi/i.test(subOf(cl,'fighter')),max:()=>2*prof(),die:cl=>'1'+dieBy(lvOf(cl,'fighter'),[[3,'d6'],[5,'d8'],[11,'d10'],[17,'d12']])},
+ {key:'soulknife',cls:'Rogue (Soulknife)',name:'Psionic Energy Dice',reset:'long',when:cl=>lvOf(cl,'rogue')>=3&&/soul/i.test(subOf(cl,'rogue')),max:()=>2*prof(),die:cl=>'1'+dieBy(lvOf(cl,'rogue'),[[3,'d6'],[5,'d8'],[11,'d10'],[17,'d12']])},
+ {key:'fspirit',cls:'Fighter (Samurai)',name:'Fighting Spirit',reset:'long',when:cl=>lvOf(cl,'fighter')>=3&&/samurai/i.test(subOf(cl,'fighter')),max:()=>3},
+ {key:'shot',cls:'Fighter (Arcane Archer)',name:'Arcane Shot',reset:'short',when:cl=>lvOf(cl,'fighter')>=3&&/archer/i.test(subOf(cl,'fighter')),max:()=>2},
+ {key:'giant',cls:'Fighter (Rune Knight)',name:"Giant's Might",reset:'long',when:cl=>lvOf(cl,'fighter')>=3&&/rune/i.test(subOf(cl,'fighter')),max:()=>prof()},
+ {key:'jolt',cls:'Artificer (Battle Smith)',name:'Arcane Jolt',reset:'long',when:cl=>lvOf(cl,'artificer')>=9&&/battle/i.test(subOf(cl,'artificer')),max:()=>Math.max(1,am('int'))},
+ {key:'fog',cls:'Artificer',name:'Flash of Genius',reset:'long',when:cl=>lvOf(cl,'artificer')>=7,max:()=>Math.max(1,am('int'))},
+ {key:'ff',cls:'Ranger (optional)',name:'Favored Foe',reset:'long',when:()=>false,max:()=>prof(),die:cl=>'1'+dieBy(lvOf(cl,'ranger'),[[1,'d4'],[6,'d6'],[14,'d8']])},
+ {key:'fbg',cls:'Sorcerer (Divine Soul)',name:'Favored by the Gods',reset:'short',when:cl=>lvOf(cl,'sorcerer')>=1&&/divine/i.test(subOf(cl,'sorcerer')),max:()=>1},
+ {key:'hex',cls:'Warlock (Hexblade)',name:"Hexblade's Curse",reset:'short',when:cl=>lvOf(cl,'warlock')>=1&&/hex/i.test(subOf(cl,'warlock')),max:()=>1}
+];
+const defFor=r=>RES_DEFS.find(d=>(r.auto&&d.key===r.auto)||(!r.auto&&d.name.toLowerCase()===String(r.name||'').trim().toLowerCase()));
+function syncClassResources(){
+  if(!S||!S.classes) return false; if(!S.resDismissed) S.resDismissed={};
+  const cl=S.classes; let changed=false;
+  RES_DEFS.forEach(d=>{
+    if(!d.when(cl)) return;
+    let r=S.resources.find(x=>x.auto===d.key)||S.resources.find(x=>!x.auto&&String(x.name||'').trim().toLowerCase()===d.name.toLowerCase());
+    if(!r){ if(S.resDismissed[d.key]) return; const mx=d.max(cl); r={id:uid(),name:d.name,max:mx,cur:mx,reset:d.reset,die:d.die?d.die(cl):'',auto:d.key}; S.resources.push(r); changed=true; return; }
+    if(!r.auto){ r.auto=d.key; r.reset=d.reset; if(d.die&&!r.die) r.die=d.die(cl); changed=true; }
+    if(r.autoMax!==false){ const mx=d.max(cl); if(mx!==r.max){ const diff=mx-r.max; r.max=mx; r.cur=Math.max(0,Math.min(mx,r.cur+Math.max(0,diff))); changed=true; } }
+    if(d.die&&r.autoDie!==false){ const dd=d.die(cl); if(dd!==r.die){ r.die=dd; changed=true; } }
+  });
+  return changed;
+}
+function addResourceFromDef(key){
+  const d=RES_DEFS.find(x=>x.key===key); if(!d) return;
+  if(S.resDismissed) delete S.resDismissed[key];
+  const mx=d.when(S.classes)?d.max(S.classes):Math.max(1,d.max(S.classes)||1);
+  S.resources.push({id:uid(),name:d.name,max:mx,cur:mx,reset:d.reset,die:d.die?d.die(S.classes):'',auto:key,autoMax:d.when(S.classes)?undefined:false});
+}
+function resAddSelect(){
+  const mine=RES_DEFS.filter(d=>d.when(S.classes)&&!S.resources.some(r=>r.auto===d.key));
+  const rest=RES_DEFS.filter(d=>!mine.includes(d)&&!S.resources.some(r=>r.auto===d.key));
+  return '<select id="addResSel" style="margin-top:8px"><option value="">+ Add resource…</option>'+
+    (mine.length?'<optgroup label="For your classes">'+mine.map(d=>'<option value="'+d.key+'">'+esc(d.name)+' — '+esc(d.cls)+'</option>').join('')+'</optgroup>':'')+
+    '<optgroup label="Other class resources">'+rest.map(d=>'<option value="'+d.key+'">'+esc(d.name)+' — '+esc(d.cls)+'</option>').join('')+'</optgroup>'+
+    '<optgroup label="Homebrew"><option value="__custom">Custom resource (blank)</option></optgroup></select>';
+}
+/* ---------- armour & weapons tables (SRD) ---------- */
+const ARMOR={
+ none:{name:'No armour',g:'Unarmoured',base:10,cap:99},
+ ud_barb:{name:'Unarmoured Defense (Barbarian)',g:'Unarmoured',base:10,cap:99,plus:'con'},
+ ud_monk:{name:'Unarmoured Defense (Monk)',g:'Unarmoured',base:10,cap:99,plus:'wis'},
+ mage:{name:'Mage Armor / Draconic Resilience',g:'Unarmoured',base:13,cap:99},
+ padded:{name:'Padded',g:'Light',base:11,cap:99,dis:true},
+ leather:{name:'Leather',g:'Light',base:11,cap:99},
+ studded:{name:'Studded leather',g:'Light',base:12,cap:99},
+ hide:{name:'Hide',g:'Medium',base:12,cap:2},
+ chainshirt:{name:'Chain shirt',g:'Medium',base:13,cap:2},
+ scale:{name:'Scale mail',g:'Medium',base:14,cap:2,dis:true},
+ breastplate:{name:'Breastplate',g:'Medium',base:14,cap:2},
+ halfplate:{name:'Half plate',g:'Medium',base:15,cap:2,dis:true},
+ ring:{name:'Ring mail',g:'Heavy',base:14,cap:0,dis:true},
+ chain:{name:'Chain mail',g:'Heavy',base:16,cap:0,dis:true,str:13},
+ splint:{name:'Splint',g:'Heavy',base:17,cap:0,dis:true,str:15},
+ plate:{name:'Plate',g:'Heavy',base:18,cap:0,dis:true,str:15},
+ manual:{name:'Custom — I\'ll type my AC',g:'Other'}
+};
+// key: [name, dice, type, category, kind, properties, versatile, mastery(2024)]
+const WEAPONS={
+ unarmed:['Unarmed strike','1','bludgeoning','simple','melee','',''],
+ club:['Club','1d4','bludgeoning','simple','melee','Light','','Slow'],
+ dagger:['Dagger','1d4','piercing','simple','melee','Finesse, light, thrown (20/60)','','Nick'],
+ greatclub:['Greatclub','1d8','bludgeoning','simple','melee','Two-handed','','Push'],
+ handaxe:['Handaxe','1d6','slashing','simple','melee','Light, thrown (20/60)','','Vex'],
+ javelin:['Javelin','1d6','piercing','simple','melee','Thrown (30/120)','','Slow'],
+ lighthammer:['Light hammer','1d4','bludgeoning','simple','melee','Light, thrown (20/60)','','Nick'],
+ mace:['Mace','1d6','bludgeoning','simple','melee','','','Sap'],
+ quarterstaff:['Quarterstaff','1d6','bludgeoning','simple','melee','Versatile','1d8','Topple'],
+ sickle:['Sickle','1d4','slashing','simple','melee','Light','','Nick'],
+ spear:['Spear','1d6','piercing','simple','melee','Thrown (20/60), versatile','1d8','Sap'],
+ lightcrossbow:['Light crossbow','1d8','piercing','simple','ranged','Ammunition (80/320), loading, two-handed','','Slow'],
+ dart:['Dart','1d4','piercing','simple','ranged','Finesse, thrown (20/60)','','Vex'],
+ shortbow:['Shortbow','1d6','piercing','simple','ranged','Ammunition (80/320), two-handed','','Vex'],
+ sling:['Sling','1d4','bludgeoning','simple','ranged','Ammunition (30/120)','','Slow'],
+ battleaxe:['Battleaxe','1d8','slashing','martial','melee','Versatile','1d10','Topple'],
+ flail:['Flail','1d8','bludgeoning','martial','melee','','','Sap'],
+ glaive:['Glaive','1d10','slashing','martial','melee','Heavy, reach, two-handed','','Graze'],
+ greataxe:['Greataxe','1d12','slashing','martial','melee','Heavy, two-handed','','Cleave'],
+ greatsword:['Greatsword','2d6','slashing','martial','melee','Heavy, two-handed','','Graze'],
+ halberd:['Halberd','1d10','slashing','martial','melee','Heavy, reach, two-handed','','Cleave'],
+ lance:['Lance','1d12','piercing','martial','melee','Reach, special','','Topple'],
+ longsword:['Longsword','1d8','slashing','martial','melee','Versatile','1d10','Sap'],
+ maul:['Maul','2d6','bludgeoning','martial','melee','Heavy, two-handed','','Topple'],
+ morningstar:['Morningstar','1d8','piercing','martial','melee','','','Sap'],
+ pike:['Pike','1d10','piercing','martial','melee','Heavy, reach, two-handed','','Push'],
+ rapier:['Rapier','1d8','piercing','martial','melee','Finesse','','Vex'],
+ scimitar:['Scimitar','1d6','slashing','martial','melee','Finesse, light','','Nick'],
+ shortsword:['Shortsword','1d6','piercing','martial','melee','Finesse, light','','Vex'],
+ trident:['Trident','1d6','piercing','martial','melee','Thrown (20/60), versatile','1d8','Topple'],
+ warpick:['War pick','1d8','piercing','martial','melee','','','Sap'],
+ warhammer:['Warhammer','1d8','bludgeoning','martial','melee','Versatile','1d10','Push'],
+ whip:['Whip','1d4','slashing','martial','melee','Finesse, reach','','Slow'],
+ blowgun:['Blowgun','1','piercing','martial','ranged','Ammunition (25/100), loading','','Vex'],
+ handcrossbow:['Hand crossbow','1d6','piercing','martial','ranged','Ammunition (30/120), light, loading','','Vex'],
+ heavycrossbow:['Heavy crossbow','1d10','piercing','martial','ranged','Ammunition (100/400), heavy, loading, two-handed','','Push'],
+ longbow:['Longbow','1d8','piercing','martial','ranged','Ammunition (150/600), heavy, two-handed','','Slow']
+};
+const WPN_PROF={druid:['club','dagger','dart','javelin','mace','quarterstaff','scimitar','sickle','sling','spear'],sorcerer:['dagger','dart','sling','quarterstaff','lightcrossbow'],wizard:['dagger','dart','sling','quarterstaff','lightcrossbow'],
+  bard:['handcrossbow','longsword','rapier','shortsword'],rogue:['handcrossbow','longsword','rapier','shortsword'],monk:['shortsword']};
+function weaponProfAuto(key){
+  if(key==='unarmed') return true; const W=WEAPONS[key]; if(!W) return null;
+  const names=S.classes.map(c=>(c.name||'').toLowerCase());
+  if(names.some(n=>['barbarian','fighter','paladin','ranger'].includes(n))) return true;
+  if(W[3]==='simple'&&names.some(n=>['bard','cleric','monk','rogue','warlock','artificer'].includes(n))) return true;
+  return names.some(n=>(WPN_PROF[n]||[]).includes(key));
+}
+const isMonkWeapon=w=>{ const W=WEAPONS[w.wtype]; if(!W) return false; return w.wtype==='unarmed'||w.wtype==='shortsword'||(W[3]==='simple'&&W[4]==='melee'&&!/heavy|two-handed/i.test(W[5])); };
+const monkLv=()=>S.classes.filter(c=>/monk/i.test(c.name||'')).reduce((a,c)=>a+(Number(c.level)||0),0);
+function weaponTemplate(key){
+  const W=WEAPONS[key]; if(!W) return null;
+  const fin=/finesse/i.test(W[5]), ranged=W[4]==='ranged'&&!/thrown/i.test(W[5]);
+  const notes=[W[5],W[6]?'Two hands: '+W[6]:'',W[7]?'Mastery (2024 rules): '+W[7]:''].filter(Boolean).join(' · ');
+  return {wtype:key,name:W[0],dmg:W[1],dmgType:W[2],ability:fin?'finesse':ranged?'dex':'str',vers:W[6]||'',notes,addMod:true};
+}
+function applyArmor(key){
+  const A=ARMOR[key]; if(!A) return; S.armor.type=key;
+  if(key==='manual'){ S.armor.name='Custom'; return; }
+  Object.assign(S.armor,{name:A.name,base:A.base,cap:A.cap,plus:A.plus||'',dis:!!A.dis,str:A.str||0});
+}
+function armorLine(){ const a=S.armor; if(!a||a.type==='manual') return ''; return (a.name||'')+(a.shield?' + shield':'')+(a.magic?' (+'+a.magic+')':''); }
+/* ---------- potions & consumables (SRD) ---------- */
+// kind: heal | temp | buff | dmg | note
+const POTIONS={
+ healing:{g:'Healing',name:'Potion of Healing',kind:'heal',dice:'2d4+2'},
+ greater:{g:'Healing',name:'Potion of Greater Healing',kind:'heal',dice:'4d4+4'},
+ superior:{g:'Healing',name:'Potion of Superior Healing',kind:'heal',dice:'8d4+8'},
+ supreme:{g:'Healing',name:'Potion of Supreme Healing',kind:'heal',dice:'10d4+20'},
+ elixir:{g:'Healing',name:'Elixir of Health',kind:'note',note:'Cures any disease and ends blinded, deafened, paralysed and poisoned.'},
+ heroism:{g:'Combat',name:'Potion of Heroism',kind:'buff',dice:'10',temp:true,dur:'1 hour',effects:[],note:'10 temp HP and under the effect of bless for 1 hour (+1d4 to attack rolls and saving throws).',fx:[{target:'atk',value:'1d4'}]},
+ speed:{g:'Combat',name:'Potion of Speed',kind:'buff',dur:'1 minute',fx:[{target:'ac',value:2},{target:'speed',value:30}],note:'Haste: +2 AC, speed doubled (adjust if not 30), advantage on DEX saves, one extra limited action each turn.'},
+ invuln:{g:'Combat',name:'Potion of Invulnerability',kind:'buff',dur:'1 minute',fx:[],note:'Resistance to all damage.'},
+ resist:{g:'Combat',name:'Potion of Resistance',kind:'buff',dur:'1 hour',fx:[],note:'Resistance to one damage type (set by the potion — e.g. fire).'},
+ hill:{g:'Giant Strength',name:'Potion of Hill Giant Strength',kind:'buff',dur:'1 hour',fx:[{target:'setscore:str',value:21}],note:'STR becomes 21 (no effect if already higher).'},
+ frost:{g:'Giant Strength',name:'Potion of Frost Giant Strength',kind:'buff',dur:'1 hour',fx:[{target:'setscore:str',value:23}],note:'STR becomes 23.'},
+ stone:{g:'Giant Strength',name:'Potion of Stone Giant Strength',kind:'buff',dur:'1 hour',fx:[{target:'setscore:str',value:23}],note:'STR becomes 23.'},
+ fire:{g:'Giant Strength',name:'Potion of Fire Giant Strength',kind:'buff',dur:'1 hour',fx:[{target:'setscore:str',value:25}],note:'STR becomes 25.'},
+ cloud:{g:'Giant Strength',name:'Potion of Cloud Giant Strength',kind:'buff',dur:'1 hour',fx:[{target:'setscore:str',value:27}],note:'STR becomes 27.'},
+ storm:{g:'Giant Strength',name:'Potion of Storm Giant Strength',kind:'buff',dur:'1 hour',fx:[{target:'setscore:str',value:29}],note:'STR becomes 29.'},
+ growth:{g:'Body & movement',name:'Potion of Growth',kind:'buff',dur:'1d4 hours',fx:[],note:'Enlarge: size grows one category, advantage on STR checks and saves, weapon attacks deal +1d4 damage.',fxDice:[{target:'dmg',value:'1d4'}]},
+ diminution:{g:'Body & movement',name:'Potion of Diminution',kind:'buff',dur:'1d4 hours',fx:[],note:'Reduce: size shrinks one category, disadvantage on STR checks and saves, weapon attacks deal −1d4 damage.'},
+ flying:{g:'Body & movement',name:'Potion of Flying',kind:'buff',dur:'1 hour',fx:[],note:'Flying speed equal to your walking speed; you can hover.'},
+ climbing:{g:'Body & movement',name:'Potion of Climbing',kind:'buff',dur:'1 hour',fx:[],note:'Climbing speed equal to walking speed; advantage on Athletics checks to climb.'},
+ gaseous:{g:'Body & movement',name:'Potion of Gaseous Form',kind:'buff',dur:'1 hour',fx:[],note:'Gaseous form: fly 10 ft, resistance to nonmagical damage, advantage on STR/DEX/CON saves. End early as a bonus action.'},
+ water:{g:'Body & movement',name:'Potion of Water Breathing',kind:'buff',dur:'1 hour',fx:[],note:'Breathe underwater.'},
+ invis:{g:'Body & movement',name:'Potion of Invisibility',kind:'buff',dur:'1 hour',fx:[],note:'Invisible until you attack or cast a spell.'},
+ firebreath:{g:'Damage & throwables',name:'Potion of Fire Breath',kind:'dmg',dice:'4d6',dtype:'fire',save:'dex',dc:13,note:'Bonus action, 30 ft. Up to 3 breaths within 1 hour.'},
+ poison:{g:'Damage & throwables',name:'Potion of Poison (drinker)',kind:'dmg',dice:'3d6',dtype:'poison',save:'con',dc:13,note:'Looks like healing. Poisoned on a failed save; repeat each turn.'},
+ alchfire:{g:'Damage & throwables',name:"Alchemist's Fire",kind:'dmg',dice:'1d4',dtype:'fire',save:'',note:'Thrown 20 ft (improvised attack). Burns 1d4 at the start of each of its turns until DC 10 DEX to put out.'},
+ acid:{g:'Damage & throwables',name:'Acid (vial)',kind:'dmg',dice:'2d6',dtype:'acid',save:'',note:'Thrown 20 ft (improvised attack).'},
+ holy:{g:'Damage & throwables',name:'Holy Water (flask)',kind:'dmg',dice:'2d6',dtype:'radiant',save:'',note:'Thrown 20 ft. Damages fiends and undead only.'},
+ antitoxin:{g:'Utility',name:'Antitoxin',kind:'buff',dur:'1 hour',fx:[],note:'Advantage on saves against poison.'},
+ animal:{g:'Utility',name:'Potion of Animal Friendship',kind:'note',dur:'1 hour',note:'Cast animal friendship (DC 13) at will for 1 hour.'},
+ clairvoyance:{g:'Utility',name:'Potion of Clairvoyance',kind:'note',note:'Gain the effect of the clairvoyance spell.'},
+ mind:{g:'Utility',name:'Potion of Mind Reading',kind:'note',note:'Gain the effect of detect thoughts (DC 13).'},
+ longevity:{g:'Utility',name:'Potion of Longevity',kind:'note',note:'Physical age reduced by 1d6+6 years.'},
+ love:{g:'Utility',name:'Philter of Love',kind:'note',note:'Charmed by the next creature you see within 10 minutes, for 1 hour.'},
+ etherealness:{g:'Oils',name:'Oil of Etherealness',kind:'buff',dur:'1 hour',fx:[],note:'Etherealness: enter the Ethereal Plane.'},
+ sharpness:{g:'Oils',name:'Oil of Sharpness',kind:'note',note:'Coat a slashing or piercing weapon: +3 to attack and damage for 1 hour (set Magic + on that weapon).'},
+ slipperiness:{g:'Oils',name:'Oil of Slipperiness',kind:'buff',dur:'8 hours',fx:[],note:'Freedom of movement for 8 hours, or pour on a 10 ft square for grease.'}
+};
+const POT_KINDS=[['heal','Heals'],['temp','Temporary HP'],['buff','Effect while active'],['dmg','Deals damage'],['note','Just a reminder']];
+function potionSelect(){
+  const groups={}; Object.keys(POTIONS).forEach(k=>{ (groups[POTIONS[k].g]=groups[POTIONS[k].g]||[]).push(k); });
+  return '<select id="addPotSel" style="margin-top:8px"><option value="">+ Add potion or consumable…</option>'+Object.keys(groups).map(g=>'<optgroup label="'+esc(g)+'">'+groups[g].map(k=>'<option value="'+k+'">'+esc(POTIONS[k].name)+(POTIONS[k].dice&&POTIONS[k].kind!=='buff'?' ('+POTIONS[k].dice+')':'')+'</option>').join('')+'</optgroup>').join('')+
+    '<optgroup label="Homebrew"><option value="__custom">Custom potion…</option></optgroup></select>';
+}
+function potionFromKey(k){ const P=POTIONS[k]; return {id:uid(),ptype:k,name:P.name,qty:1,kind:P.kind,dice:P.dice||'',dtype:P.dtype||'',save:P.save||'',dc:P.dc||'',dur:P.dur||'',note:P.note||'',fx:JSON.parse(JSON.stringify((P.fx||[]).concat(P.fxDice||[]))),temp:!!P.temp}; }
+function usePotion(p){
+  if(!p||(Number(p.qty)||0)<=0) return; p.qty=(Number(p.qty)||0)-1;
+  const lines=[]; let foot=p.note||'';
+  if(p.kind==='heal'){ const r=rollExpr(expand(p.dice||'0',{}),false,0); const before=S.hp; S.hp=Math.min(hpMaxV(),S.hp+r.total); lines.push({label:'HP regained',big:r.total,detail:r.detail}); foot='HP '+before+' → '+S.hp+' / '+hpMaxV()+(foot?'. '+foot:''); }
+  if(p.kind==='temp'||p.temp){ const r=rollExpr(expand(p.dice||'0',{}),false,0); S.temp=Math.max(S.temp,r.total); lines.push({label:'Temp HP',big:r.total,detail:r.detail}); }
+  if(p.kind==='dmg'){ const r=rollExpr(expand(p.dice||'0',{}),false,0); lines.push({label:p.dtype||'damage',big:r.total,detail:r.detail}); if(p.save) lines.push({label:ABN[p.save]+' save',big:'DC '+(p.dc||10)}); }
+  if(p.kind==='buff'){ S.features.push({id:uid(),name:'🧪 '+p.name,text:(p.note||'')+(p.dur?' Lasts '+p.dur+'.':''),active:true,effects:JSON.parse(JSON.stringify(p.fx||[])),potion:true});
+    lines.push({label:'Active',big:'✓',detail:(p.dur?'Lasts '+p.dur:'')}); foot=(foot?foot+' ':'')+'Shown under Active effects on Play — tap End when it wears off.'; }
+  if(!lines.length) lines.push({label:'Used',big:'✓'});
+  touch(); render(); showResult(p.name,lines,foot+' ('+p.qty+' left)');
+}
+function vPotions(full){
+  const list=full?S.potions:S.potions.filter(p=>p.qty>0);
+  let h='';
+  list.forEach(p=>{ const i=S.potions.indexOf(p);
+    h+='<div class="res"><span class="nm"><b>'+esc(p.name)+'</b><div class="meta">'+esc([p.kind==='heal'?'Heals '+p.dice:p.kind==='temp'?'Temp HP '+p.dice:p.kind==='dmg'?p.dice+' '+p.dtype+(p.save?' · '+ABN[p.save]+' DC '+p.dc:''):'',p.dur].filter(Boolean).join(' · '))+'</div></span>'+
+      (full?'<button class="btn sm" data-act="potQty" data-d="-1" data-id="'+p.id+'">−</button><span class="ct">'+p.qty+'</span><button class="btn sm" data-act="potQty" data-d="1" data-id="'+p.id+'">+</button>':'<span class="ct">×'+p.qty+'</span>')+
+      '<button class="btn sm pri" data-act="potUse" data-id="'+p.id+'" '+(p.qty>0?'':'disabled')+'>Use</button></div>';
+    if(full) h+='<details class="potedit"><summary>Edit '+esc(p.name)+'</summary>'+fT('potions.'+i+'.name','Name',p.name)+'<div class="grid g3">'+fS('potions.'+i+'.kind','What it does',p.kind,POT_KINDS)+fT('potions.'+i+'.dice','Dice / amount',p.dice,'2d4+2')+fT('potions.'+i+'.dur','Lasts',p.dur,'1 hour')+'</div>'+
+      (p.kind==='dmg'?'<div class="grid g3">'+fT('potions.'+i+'.dtype','Damage type',p.dtype,'fire')+fS('potions.'+i+'.save','Save',p.save,[['','None']].concat(ABOPT))+fN('potions.'+i+'.dc','DC',p.dc||13)+'</div>':'')+
+      (p.kind==='buff'?'<div class="sub" style="margin-top:6px">While active</div>'+(p.fx||[]).map((e,j)=>'<div class="effrow"><select data-bind="potions.'+i+'.fx.'+j+'.target">'+TARGETS.map(t=>'<option value="'+esc(t[0])+'" '+(t[0]===e.target?'selected':'')+'>'+esc(t[1])+'</option>').join('')+'</select><input type="text" data-bind="potions.'+i+'.fx.'+j+'.value" value="'+esc(e.value)+'"><button class="btn sm warn" data-act="potFxDel" data-i="'+i+'" data-j="'+j+'">✕</button></div>').join('')+'<button class="btn sm" style="margin-top:6px" data-act="potFxAdd" data-i="'+i+'">+ Add effect</button>':'')+
+      fA('potions.'+i+'.note','Notes',p.note)+'<div style="text-align:right;margin-top:6px">'+delBtn('potions',p.id)+'</div></details>';
+  });
+  return h;
+}
 let LU=null;
 function openLevelUp(){ LU={pick:!S.classes.length?'new':S.classes.length===1?S.classes[0].id:'',newName:'Fighter',hp:null,hd:null,cast:null}; drawLevelUp(); }
 function luClasses(){
@@ -287,7 +501,9 @@ function drawLevelUp(){
   if(nr.length) h+='<div class="sub" style="margin-top:12px">New for your class</div>'+nr.map(o=>{ const sgg=resSuggest({name:o.name,max:LR[o.key][1]},cl,L); return fCl('luNR_'+o.key,'Add '+o.name+' (max '+(sgg==null?LR[o.key][1]:sgg)+')',true); }).join('');
   const tips=LU_TIPS.filter(t=>t[0].toLowerCase()===(tgt.name||'').toLowerCase()&&t[1]===Number(tgt.level));
   if(tips.length) h+='<div class="hint" style="color:var(--acc2)">'+tips.map(t=>'★ '+esc(t[2])).join('<br>')+'</div>';
-  if(S.resources.length){ h+='<div class="sub" style="margin-top:12px">Resources (new max)</div><div class="grid g2">'+S.resources.map(r=>{ const sgg=resSuggest(r,cl,L); return '<label class="f"><span>'+esc(r.name)+' (now '+r.max+')</span><input id="luRes_'+r.id+'" type="number" inputmode="numeric" value="'+(sgg==null?r.max:sgg)+'"></label>'; }).join('')+'</div>'; }
+  const autoR=S.resources.filter(r=>r.auto&&r.autoMax!==false&&RES_DEFS.find(d=>d.key===r.auto)), manR=S.resources.filter(r=>!autoR.includes(r));
+  if(autoR.length) h+='<div class="sub" style="margin-top:12px">Class resources (update automatically)</div><div class="hint">'+autoR.map(r=>{ const d=RES_DEFS.find(x=>x.key===r.auto); const nm=d.when(cl)?d.max(cl):r.max; const nd=d.die&&d.when(cl)?d.die(cl):r.die; return esc(r.name)+': '+r.max+(nm!==r.max?' → <b>'+nm+'</b>':'')+(r.die&&nd!==r.die?' · '+esc(r.die)+' → <b>'+esc(nd)+'</b>':''); }).join('<br>')+'</div>';
+  if(manR.length){ h+='<div class="sub" style="margin-top:12px">Other resources (new max)</div><div class="grid g2">'+manR.map(r=>{ const sgg=resSuggest(r,cl,L); return '<label class="f"><span>'+esc(r.name)+' (now '+r.max+')</span><input id="luRes_'+r.id+'" type="number" inputmode="numeric" value="'+(sgg==null?r.max:sgg)+'"></label>'; }).join('')+'</div>'; }
   h+='<div class="sub" style="margin-top:12px">New feature or feat (optional)</div><input id="luFeat" type="text" placeholder="Name, e.g. Extra Attack" style="margin-top:4px"><textarea id="luFeatTxt" placeholder="What it does" style="margin-top:6px;min-height:56px"></textarea>';
   h+='<button class="btn pri" style="width:100%;margin-top:14px" data-act="luGo">Level up to '+L+'</button><button class="btn ghost" style="width:100%;margin-top:8px" data-act="close">Cancel</button>';
   openSheet(h);
@@ -311,8 +527,7 @@ function applyLevelUp(){
   ABIL.forEach(a=>{ const el=g('luAsi_'+a); if(el) S.abilities[a]+=Number(el.value)||0; });
   const conGain=(am('con')-conBefore)*L; if(conGain){ S.hpMax+=conGain; S.hp+=conGain; }
   S.resources.forEach(r=>{ const el=g('luRes_'+r.id); if(!el) return; const nm=Number(el.value)||0; const diff=nm-r.max; r.max=nm; r.cur=Math.max(0,Math.min(nm,r.cur+Math.max(0,diff))); });
-  newResFor(cl).forEach(o=>{ const el=g('luNR_'+o.key); if(el&&!el.checked) return; const d=LR[o.key]; const sgg=resSuggest({name:d[0],max:d[1]},cl,L); const mx=sgg==null?d[1]:sgg;
-    S.resources.push({id:uid(),name:d[0],max:mx,cur:mx,reset:d[2],die:d[3]}); });
+  newResFor(cl).forEach(o=>{ const el=g('luNR_'+o.key); if(el&&!el.checked){ S.resDismissed=S.resDismissed||{}; const d=RES_DEFS.find(x=>x.name===o.name); if(d) S.resDismissed[d.key]=true; } });
   const fn=g('luFeat')&&g('luFeat').value.trim(); if(fn) S.features.push({id:uid(),name:fn,text:g('luFeatTxt').value,active:true,effects:[]});
   if(!S.classes.length&&SAVES[tgt.name]){ S.saveProf={}; SAVES[tgt.name].forEach(a=>S.saveProf[a]=true); if(CLASSES[tgt.name][2]) S.castAbility=CLASSES[tgt.name][2]; }
   if(S.castAbility==='none'&&tgt.cast!=='none'&&CLASSES[tgt.name]&&CLASSES[tgt.name][2]) S.castAbility=CLASSES[tgt.name][2];
@@ -479,9 +694,9 @@ const uid = ()=>Math.random().toString(36).slice(2,9);
 function blank(){
   const slots={}; for(let i=1;i<=9;i++) slots[i]={max:0,used:0};
   return {v:1,ts:0,name:'New Character',cls:'',level:0,ac:10,hpMax:10,hp:10,temp:0,speed:30,prof:2,initBonus:0,
-    abilities:{str:10,dex:10,con:10,int:10,wis:10,cha:10},saveProf:{},skills:{},castAbility:'none',slots,pactShortRest:false,pact:{level:0,max:0,used:0},classes:[],hdUsed:{},hdFullRest:false,
+    abilities:{str:10,dex:10,con:10,int:10,wis:10,cha:10},saveProf:{},skills:{},castAbility:'none',slots,pactShortRest:false,pact:{level:0,max:0,used:0},classes:[],hdUsed:{},hdFullRest:false,armor:{type:'none',name:'No armour',base:10,cap:99,plus:'',dis:false,str:0,shield:false,shieldBonus:2,magic:0},
     resources:[],attacks:[],spells:[],features:[],notes:'',
-    currency:[['CP',0],['SP',0],['EP',0],['GP',0],['PP',0]].map(c=>({id:uid(),name:c[0],amt:c[1]})),items:[],portrait:'',bio:{},powers:[]};
+    potions:[],currency:[['CP',0],['SP',0],['EP',0],['GP',0],['PP',0]].map(c=>({id:uid(),name:c[0],amt:c[1]})),items:[],portrait:'',bio:{},powers:[]};
 }
 const SPELL_DEF={level:1,mode:'none',saveStat:'dex',dmg:'',dmgType:'',upDice:'',cantripScale:false,halfOnSave:false,addMod:false,notes:'',prep:'prepared',source:'',ability:'default',free:0,freeUsed:0};
 const PREP=[['prepared','Prepared'],['always','Always prepared'],['known','Known'],['unprepared','Not prepared']];
@@ -491,7 +706,8 @@ function example(){
     abilities:{str:8,dex:14,con:14,int:10,wis:12,cha:18},saveProf:{con:true,cha:true},skills:{Arcana:1,Persuasion:1,Insight:1},castAbility:'cha'});
   s.slots[1].max=4; s.slots[2].max=3; s.slots[3].max=2;
   s.resources=[{id:uid(),name:'Sorcery Points',max:5,cur:5,reset:'long',die:''}];
-  s.attacks=[{id:uid(),name:'Dagger',ability:'dex',prof:true,bonus:0,dmg:'1d4',dmgType:'piercing',addMod:true,notes:'Finesse, thrown 20/60'}];
+  s.armor={type:'mage',name:'Mage Armor / Draconic Resilience',base:13,cap:99,plus:'',dis:false,str:0,shield:false,shieldBonus:2,magic:0};
+  s.attacks=[{id:uid(),wtype:'dagger',magic:0,name:'Dagger',ability:'finesse',prof:true,bonus:0,dmg:'1d4',dmgType:'piercing',addMod:true,notes:'Finesse, thrown 20/60'}];
   s.spells=[
     {id:uid(),name:'Fire Bolt',level:0,mode:'attack',saveStat:'dex',dmg:'1d10',dmgType:'fire',upDice:'',cantripScale:true,halfOnSave:false,addMod:false,notes:'120 ft'},
     {id:uid(),name:'Magic Missile',level:1,mode:'none',saveStat:'dex',dmg:'3d4+3',dmgType:'force',upDice:'1d4+1',cantripScale:false,halfOnSave:false,addMod:false,notes:'Auto-hit. 3 darts, +1 dart per level above 1st'},
@@ -513,10 +729,15 @@ function example(){
   return s;
 }
 function normalize(s){
+  const legacyAC=!!(s&&s.abilities&&!s.armor);
   const b=blank(); s=Object.assign(b,s||{});
+  if(legacyAC) s.armor={type:'manual'};
   for(let i=1;i<=9;i++) s.slots[i]=Object.assign({max:0,used:0},s.slots[i]||{});
   s.pact=Object.assign({level:0,max:0,used:0},s.pact||{});
   if(!s.hdUsed||typeof s.hdUsed!=='object') s.hdUsed={};
+  if(!s.armor||typeof s.armor!=='object'||!s.armor.type) s.armor={type:'manual',name:'Custom',base:10,cap:99,plus:'',dis:false,str:0,shield:false,shieldBonus:2,magic:0};
+  s.armor=Object.assign({type:'manual',name:'Custom',base:10,cap:99,plus:'',dis:false,str:0,shield:false,shieldBonus:2,magic:0},s.armor);
+  (s.attacks||[]).forEach(w=>{ if(w.magic===undefined) w.magic=0; });
   if(!Array.isArray(s.classes)) s.classes=[];
   if(!s.classes.length&&String(s.cls||'').trim()){ const raw=String(s.cls||'').trim(); const m=raw.match(/^([A-Za-z' ]+?)\s*(?:\((.*)\))?$/); const nm=m?m[1].trim():raw; const k=Object.keys(CLASSES).find(c=>c.toLowerCase()===nm.toLowerCase());
     s.classes=[{id:uid(),name:k||nm||'Adventurer',sub:m&&m[2]?m[2]:'',level:Number(s.level)||1,hd:k?CLASSES[k][0]:'d8',cast:k?CLASSES[k][1]:(s.castAbility&&s.castAbility!=='none'?'full':'none')}]; }
@@ -531,7 +752,7 @@ function normalize(s){
   if(Array.isArray(s.meta)&&s.meta.length&&!(Array.isArray(s.powers)&&s.powers.length)) s.powers=s.meta.map(m=>Object.assign({},POWER_DEF,m,{group:s.metaLabel||'Metamagic',attach:'spell'}));
   delete s.meta; delete s.metaLabel;
   if(!Array.isArray(s.powers)) s.powers=[]; s.powers.forEach(p=>{ for(const k in POWER_DEF) if(p[k]===undefined) p[k]=POWER_DEF[k]; });
-  ['currency','items','powers'].forEach(k=>{ if(!Array.isArray(s[k])) s[k]=[]; s[k].forEach(x=>{ if(!x.id) x.id=uid(); }); });
+  ['currency','items','powers','potions'].forEach(k=>{ if(!Array.isArray(s[k])) s[k]=[]; s[k].forEach(x=>{ if(!x.id) x.id=uid(); }); });
   if(!s.bio||typeof s.bio!=='object') s.bio={};
   const hi=s.resources.findIndex(r=>/^hit dice$/i.test(String(r.name||'').trim()));
   if(hi>=0){ const r=s.resources[hi]; const die=(s.classes[0]&&s.classes[0].hd)||'d8'; s.hdUsed[die]=Math.max(0,(Number(r.max)||0)-(Number(r.cur)||0)); s.resources.splice(hi,1); }
@@ -585,15 +806,18 @@ const typeShow=str=>{ const a=typeList(str); return a.length>1?'random '+(/eleme
 function extraLines(t,scope,crit,fallbackType){ return diceOf(t,scope).map(x=>{ const r=rollExpr(expand(x.e.value,{}),crit,0); const ty=pickType(x.e.dtype)||fallbackType||'damage';
   return {label:ty+' · '+x.f.name,big:r.total,detail:r.detail+(String(x.e.dtype||'').includes(',')?' — type rolled from: '+x.e.dtype:''),n:r.total}; }); }
 const prof = ()=>S.prof+bonus('prof');
-const score = a=>S.abilities[a]+bonus('score:'+a);
+const setScore = a=>{ let m=0; S.features.forEach(f=>{ if(f.active) f.effects.forEach(e=>{ if(e.target==='setscore:'+a) m=Math.max(m,Number(e.value)||0); }); }); return m; };
+const score = a=>Math.max(S.abilities[a]+bonus('score:'+a),setScore(a));
 const am = a=>mod(score(a));
 const saveB = a=>am(a)+(S.saveProf[a]?prof():0)+bonus('allSaves')+bonus('save:'+a);
 const skillLv = n=>S.skills[n]||0;
 const skillB = (n,a)=>am(a)+Math.floor(prof()*skillLv(n))+bonus('allChecks')+bonus('skill:'+n);
-const acV = ()=>S.ac+bonus('ac');
+const acV = ()=>{ const a=S.armor; if(!a||a.type==='manual') return S.ac+bonus('ac');
+  return (Number(a.base)||0)+Math.min(am('dex'),Number(a.cap)>=0?Number(a.cap):99)+(a.plus?am(a.plus):0)+(a.shield?(Number(a.shieldBonus)||0):0)+(Number(a.magic)||0)+bonus('ac'); };
+const armorSlow = ()=>{ const a=S.armor; return a&&a.type!=='manual'&&Number(a.str)>0&&score('str')<Number(a.str); };
 const hpMaxV = ()=>S.hpMax+bonus('hpMax');
 const initV = ()=>am('dex')+S.initBonus+bonus('init');
-const speedV = ()=>S.speed+bonus('speed');
+const speedV = ()=>S.speed+bonus('speed')-(armorSlow()?10:0);
 const castM = ()=>S.castAbility==='none'?0:am(S.castAbility);
 const dcV = ()=>8+prof()+castM()+bonus('spellDC');
 const satkV = ()=>prof()+castM()+bonus('spellAtk');
@@ -601,8 +825,11 @@ const spM = sp=>(sp.ability&&sp.ability!=='default')?am(sp.ability):castM();
 const dcFor = sp=>8+prof()+spM(sp)+bonus('spellDC');
 const atkFor = sp=>prof()+spM(sp)+bonus('spellAtk');
 const tier = ()=>S.level>=17?4:S.level>=11?3:S.level>=5?2:1;
-const wHit = w=>(w.ability==='none'?0:am(w.ability))+(w.prof?prof():0)+(Number(w.bonus)||0)+flatOf('atk',w.id);
-const wFlat = w=>(w.addMod&&w.ability!=='none'?am(w.ability):0)+flatOf('dmg',w.id);
+const wMod = w=>{ let a=w.ability; if(monkLv()&&isMonkWeapon(w)&&(a==='str'||a==='dex'||a==='finesse')) a='finesse'; return a==='none'?0:a==='finesse'?Math.max(am('str'),am('dex')):am(a); };
+const wProf = w=>(w.wtype&&w.autoProf!==false&&weaponProfAuto(w.wtype)!==null)?weaponProfAuto(w.wtype):!!w.prof;
+const wDice = w=>{ let d=(w.twoHand&&w.vers)?w.vers:w.dmg; if(monkLv()&&isMonkWeapon(w)){ const m=martialDie(); const sz=x=>Number((String(x).match(/d(\d+)/)||[0,0])[1])||Number(x)||0; if(sz(m)>sz(d)) d=m; } return d; };
+const wHit = w=>wMod(w)+(wProf(w)?prof():0)+(Number(w.bonus)||0)+(Number(w.magic)||0)+flatOf('atk',w.id);
+const wFlat = w=>(w.addMod&&w.ability!=='none'?wMod(w):0)+(Number(w.magic)||0)+flatOf('dmg',w.id);
 
 /* ---------- dice ---------- */
 function d(n){ const a=new Uint32Array(1); crypto.getRandomValues(a); return 1+(a[0]%n); }
@@ -737,7 +964,7 @@ function attack(w,ids){
   const crit=r.nat===20;
   const wx=(w.extra||[]).filter(x=>x.dmg).map(x=>{ const r=rollExpr(expand(x.dmg,{}),crit,0); const ty=pickType(x.type)||'damage'; return {label:ty,big:r.total,detail:r.detail+(typeList(x.type).length>1?' — type rolled from: '+typeList(x.type).join(', '):''),n:r.total}; });
   const xl=wx.concat(extraLines('dmg',w.id,crit,w.dmgType)).concat(u.dmg.map(x=>{ const r=rollExpr(x.e,crit,0); return {label:x.label,big:r.total,detail:r.detail,n:r.total}; }));
-  const dm=rollExpr(w.dmg,crit,wFlat(w));
+  const dm=rollExpr(expand(wDice(w),{}),crit,wFlat(w));
   const lines=[{label:'To hit',big:total,detail:txt+(crit?' — CRIT':''),cls:crit?'crit':r.nat===1?'fumble':''},
     {label:(pickType(w.dmgType)||'damage')+(crit?' (crit)':''),big:dm.total,detail:dm.detail}].concat(xl,xl.length?[{label:'Total damage',big:dm.total+xl.reduce((a,x)=>a+x.n,0),detail:'',cls:'crit'}]:[],u.lines);
   showResult(w.name,lines,[u.notes.join('\n'),u.left.join(' · '),w.notes||''].filter(Boolean).join('\n'));
@@ -853,6 +1080,7 @@ function importText(txt){
 const app=document.getElementById('app');
 function render(){
   try{ localStorage.setItem(LS+':tab',tab); }catch(e){}
+  if(syncClassResources()) touch();
   const tabs=[['chars','Chars'],['play','Play'],['spells','Spells'],['features','Feats'],['bag','Bag'],['bio','Bio'],['setup','Setup']];
   let h='<header class="top"><div class="toprow">'+(S.portrait?'<img class="thumb" src="'+S.portrait+'" alt="" data-act="tab" data-t="bio">':'')+'<div class="who"><h1>'+esc(S.name)+'</h1><div class="sub">'+whoLine()+'</div></div>'+
     '<button class="btn sm '+(tab==='log'?'pri':'')+'" data-act="tab" data-t="log">Log</button>'+(CAN_PUBLISH?'<button class="btn save" id="saveBtn" data-act="save">Saved</button>':'')+'</div>'+
@@ -894,14 +1122,17 @@ function vPlay(){
     '<div class="bar"><i style="width:'+pct+'%;background:'+(pct<30?'var(--bad)':pct<60?'var(--acc2)':'var(--good)')+'"></i></div>'+
     '<div class="hpctl"><input id="hpAmt" type="number" inputmode="numeric" placeholder="0"><button class="btn warn" data-act="hp" data-k="dmg">Damage</button><button class="btn" data-act="hp" data-k="heal">Heal</button><button class="btn" data-act="hp" data-k="temp">Temp</button></div></div>';
   h+=restRow()+'<button class="btn" style="width:100%;margin-top:8px" data-act="levelUp">⬆ Level up</button>';
+  const act=S.features.filter(f=>f.potion&&f.active);
+  if(act.length) h+='<div class="card"><h2>Active effects</h2>'+act.map(f=>'<div class="res"><span class="nm"><b>'+esc(f.name)+'</b><div class="meta">'+esc(f.text||'')+'</div></span><button class="btn sm warn" data-act="potEnd" data-id="'+f.id+'">End</button></div>').join('')+'</div>';
+  if(S.potions.some(p=>p.qty>0)) h+='<div class="card"><h2>Potions</h2>'+vPotions(false)+'</div>';
   h+='<div class="card"><div class="grid g3">'+
-    '<div class="stat"><div class="k">AC</div><div class="v">'+acV()+'</div></div>'+
+    '<div class="stat"><div class="k">AC</div><div class="v">'+acV()+'</div>'+(armorLine()?'<div class="s">'+esc(armorLine())+'</div>':'')+'</div>'+
     '<button class="stat" data-act="init"><div class="k">Initiative</div><div class="v">'+sg(initV())+'</div></button>'+
-    '<div class="stat"><div class="k">Speed</div><div class="v">'+speedV()+'</div></div></div>'+
+    '<div class="stat"><div class="k">Speed</div><div class="v">'+speedV()+'</div>'+(armorSlow()?'<div class="s">−10 heavy armour</div>':'')+'</div></div>'+
     '<div class="sub" style="margin-top:8px;text-align:center">Proficiency '+sg(prof())+(S.castAbility!=='none'?' · Spell DC '+dcV()+' · Spell attack '+sg(satkV()):'')+'</div></div>';
   h+='<div class="card"><h2>Abilities</h2><div class="grid g6">'+ABIL.map(a=>'<button class="stat" data-act="abil" data-a="'+a+'"><div class="k">'+ABN[a]+'</div><div class="v">'+sg(am(a))+'</div><div class="s">'+score(a)+'</div></button>').join('')+'</div></div>';
   h+='<div class="card"><h2>Saving throws</h2><div class="grid g3">'+ABIL.map(a=>'<button class="row" data-act="save1" data-a="'+a+'" style="margin:0"><span class="dot '+(S.saveProf[a]?'p':'')+'"></span><span class="nm">'+ABN[a]+'</span><span class="bn">'+sg(saveB(a))+'</span></button>').join('')+'</div></div>';
-  if(S.attacks.length) h+='<div class="card"><h2>Attacks</h2>'+S.attacks.map(w=>'<button class="row" data-act="atk" data-id="'+w.id+'"><span class="nm"><b>'+esc(w.name)+'</b><div class="meta">'+esc(w.dmg)+(wFlat(w)?sg(wFlat(w)):'')+' '+esc(typeShow(w.dmgType))+(w.extra||[]).filter(x=>x.dmg).map(x=>' + '+esc(x.dmg)+' '+esc(typeShow(x.type))).join('')+diceOf('dmg',w.id).map(x=>' + '+esc(x.e.value)+' '+esc(x.e.dtype&&x.e.dtype.includes(',')?'random type':(x.e.dtype||''))).join('')+'</div></span><span class="bn">'+sg(wHit(w))+'</span></button>').join('')+'</div>';
+  if(S.attacks.length) h+='<div class="card"><h2>Attacks</h2>'+S.attacks.map(w=>'<button class="row" data-act="atk" data-id="'+w.id+'"><span class="nm"><b>'+esc(w.name)+'</b><div class="meta">'+esc(expand(wDice(w),{}))+(wFlat(w)?sg(wFlat(w)):'')+' '+esc(typeShow(w.dmgType))+(w.extra||[]).filter(x=>x.dmg).map(x=>' + '+esc(x.dmg)+' '+esc(typeShow(x.type))).join('')+diceOf('dmg',w.id).map(x=>' + '+esc(x.e.value)+' '+esc(x.e.dtype&&x.e.dtype.includes(',')?'random type':(x.e.dtype||''))).join('')+'</div></span><span class="bn">'+sg(wHit(w))+'</span></button>').join('')+'</div>';
   const selfP=S.powers.filter(p=>p.attach==='self');
   if(selfP.length){ const g={}; selfP.forEach(p=>{ (g[p.group||'Actions']=g[p.group||'Actions']||[]).push(p); });
     h+='<div class="card"><h2>Class actions</h2>'+Object.keys(g).map(k=>'<div class="lvhead">'+esc(k)+'</div>'+g[k].map(p=>'<div class="res"><span class="nm"><b>'+esc(p.name)+'</b><div class="meta">'+esc(pCostLabel(p))+'</div></span><button class="btn sm pri" data-act="pUse" data-id="'+p.id+'">Use</button></div>').join('')).join('')+'</div>'; }
@@ -910,7 +1141,7 @@ function vPlay(){
     '<button class="btn sm" data-act="rdec" data-id="'+r.id+'">−</button><span class="ct">'+r.cur+'/'+r.max+'</span><button class="btn sm" data-act="rinc" data-id="'+r.id+'">+</button>'+
     (r.die?'<button class="btn sm pri" data-act="ruse" data-id="'+r.id+'" '+(r.cur<=0?'disabled':'')+'>Use</button>':'')+'</div>').join(''):'<div class="empty">Add superiority dice, sorcery points, ki, rages etc. in Setup.</div>')+
     '</div>';
-  h+='<div class="card"><h2>Skills</h2><div class="cols2">'+SKILLS.map(s=>{ const lv=skillLv(s[0]); return '<button class="row" data-act="skill" data-s="'+esc(s[0])+'"><span class="dot '+(lv>=2?'e':lv>=1?'p':'')+'"></span><span class="nm">'+s[0]+' <span class="sub">'+ABN[s[1]]+'</span></span><span class="bn">'+sg(skillB(s[0],s[1]))+'</span></button>'; }).join('')+'</div></div>';
+  h+='<div class="card"><h2>Skills</h2><div class="cols2">'+SKILLS.map(s=>{ const lv=skillLv(s[0]); return '<button class="row" data-act="skill" data-s="'+esc(s[0])+'"><span class="dot '+(lv>=2?'e':lv>=1?'p':'')+'"></span><span class="nm">'+s[0]+' <span class="sub">'+ABN[s[1]]+'</span>'+(s[0]==='Stealth'&&S.armor&&S.armor.type!=='manual'&&S.armor.dis?' <span class="tag" style="background:#3a1f1f;color:#ffb3b0">Dis · armour</span>':'')+'</span><span class="bn">'+sg(skillB(s[0],s[1]))+'</span></button>'; }).join('')+'</div></div>';
   if(S.notes) h+='<div class="card"><h2>Notes</h2><div class="note">'+esc(S.notes)+'</div></div>';
   return h;
 }
@@ -956,6 +1187,7 @@ function vBag(){
   let h='<div class="card"><h2>Money</h2><div class="hpctl" style="margin-bottom:6px"><input id="curAmt" type="number" inputmode="numeric" placeholder="1"><span class="sub" style="align-self:center">amount for − / +</span></div>'+
     (S.currency.length?S.currency.map(c=>'<div class="res"><span class="nm"><b>'+esc(c.name)+'</b></span><button class="btn sm" data-act="cur" data-d="-1" data-id="'+c.id+'">−</button><span class="ct" style="min-width:60px">'+c.amt+'</span><button class="btn sm" data-act="cur" data-d="1" data-id="'+c.id+'">+</button></div>').join(''):'<div class="empty">No currencies. Add them in Setup.</div>')+
     '<div class="hint">Rename currencies or add your own (gems, guild marks…) in Setup.</div></div>';
+  h+='<div class="card"><h2>Potions & consumables</h2>'+(S.potions.length?vPotions(true):'<div class="empty">None yet.</div>')+potionSelect()+'<div class="hint">Use applies the effect: healing goes straight onto your HP, effects like Giant Strength or Speed switch on until you end them.</div></div>';
   h+='<div class="card"><h2>Inventory</h2>'+S.items.map((it,i)=>'<div class="ed"><div class="hd"><input type="text" data-bind="items.'+i+'.name" value="'+esc(it.name)+'" placeholder="Item" style="flex:1">'+
     '<button class="btn sm" data-act="qty" data-d="-1" data-id="'+it.id+'">−</button><span class="ct" style="min-width:30px;text-align:center;font-weight:700">'+it.qty+'</span><button class="btn sm" data-act="qty" data-d="1" data-id="'+it.id+'">+</button></div>'+
     '<div class="effrow"><input type="text" data-bind="items.'+i+'.notes" value="'+esc(it.notes)+'" placeholder="Notes" style="flex:1;width:auto">'+delBtn('items',it.id)+'</div></div>').join('')+
@@ -1005,6 +1237,14 @@ const fA=(p,l,v)=>'<label class="f"><span>'+l+'</span><textarea data-bind="'+p+'
 const fS=(p,l,v,opts,num)=>'<label class="f"><span>'+l+'</span><select data-bind="'+p+'" '+(num?'data-num':'')+'>'+opts.map(o=>'<option value="'+esc(o[0])+'" '+(String(o[0])===String(v)?'selected':'')+'>'+esc(o[1])+'</option>').join('')+'</select></label>';
 const fC=(p,l,v)=>'<label class="chk"><input type="checkbox" data-bind="'+p+'" '+(v?'checked':'')+'> '+l+'</label>';
 const ABOPT=ABIL.map(a=>[a,ABN[a]]);
+function weaponSelect(bind,cur){
+  const grp=[['simple','melee','Simple melee'],['simple','ranged','Simple ranged'],['martial','melee','Martial melee'],['martial','ranged','Martial ranged']];
+  const opt=k=>'<option value="'+k+'" '+(cur===k?'selected':'')+'>'+esc(WEAPONS[k][0])+' — '+WEAPONS[k][1]+' '+WEAPONS[k][2]+'</option>';
+  const body='<option value="">'+(cur===null?'+ Add weapon or attack…':'Custom / homebrew')+'</option><optgroup label="Basic"><option value="unarmed" '+(cur==='unarmed'?'selected':'')+'>Unarmed strike</option></optgroup>'+
+    grp.map(g=>'<optgroup label="'+g[2]+'">'+Object.keys(WEAPONS).filter(k=>k!=='unarmed'&&WEAPONS[k][3]===g[0]&&WEAPONS[k][4]===g[1]).map(opt).join('')+'</optgroup>').join('')+
+    (cur===null?'<optgroup label="Homebrew"><option value="__custom">Custom attack (blank)</option></optgroup>':'');
+  return cur===null?'<select id="addAtkSel" style="margin-top:8px">'+body+'</select>':'<label class="f"><span>Weapon</span><select data-bind="'+bind+'" data-rerender>'+body+'</select></label>';
+}
 function delBtn(list,id){ return '<button class="btn sm warn" data-act="del" data-list="'+list+'" data-id="'+id+'">Delete</button>'; }
 
 function vSetup(){
@@ -1014,8 +1254,16 @@ function vSetup(){
       '<div class="grid g2">'+fT('classes.'+i+'.name','Class',c.name,'Fighter')+fT('classes.'+i+'.sub','Subclass',c.sub,'Battle Master')+'</div>'+
       '<div class="grid g3">'+fN('classes.'+i+'.level','Level',c.level)+fS('classes.'+i+'.hd','Hit die',c.hd,[['d6','d6'],['d8','d8'],['d10','d10'],['d12','d12']])+fS('classes.'+i+'.cast','Spellcasting',c.cast,CAST_OPT)+'</div></div>').join('')+
     '<button class="btn sm" style="margin-top:8px" data-act="add" data-list="classes">+ Add class (multiclass)</button>'+
-    '<div class="grid g3">'+fN('prof','Prof. bonus',S.prof)+fN('speed','Speed',S.speed)+fN('ac','AC',S.ac)+fN('hpMax','Max HP',S.hpMax)+fN('initBonus','Extra init.',S.initBonus)+'</div>'+fC('hdFullRest','Long rest gives back all hit dice (2024 rules)',S.hdFullRest)+fC('lucky','Halfling Lucky: reroll natural 1s on attacks, checks and saves',S.lucky)+
+    '<div class="grid g3">'+fN('prof','Prof. bonus',S.prof)+fN('speed','Speed',S.speed)+fN('hpMax','Max HP',S.hpMax)+fN('initBonus','Extra init.',S.initBonus)+'</div>'+fC('hdFullRest','Long rest gives back all hit dice (2024 rules)',S.hdFullRest)+fC('lucky','Halfling Lucky: reroll natural 1s on attacks, checks and saves',S.lucky)+
     '<div class="hint">Type your own raw numbers. Homebrew bonuses (Features) are added on top automatically.</div></div>';
+  { const a=S.armor; const groups={}; Object.keys(ARMOR).forEach(k=>{ (groups[ARMOR[k].g]=groups[ARMOR[k].g]||[]).push(k); });
+    h+='<div class="card"><h2>Armour & AC</h2><label class="f"><span>Armour</span><select data-bind="armor.type" data-rerender>'+Object.keys(groups).map(g=>'<optgroup label="'+g+'">'+groups[g].map(k=>{ const A=ARMOR[k]; return '<option value="'+k+'" '+(a.type===k?'selected':'')+'>'+esc(A.name)+(A.base?' — '+A.base+(A.cap===99?' + DEX':A.cap?' + DEX (max 2)':'')+(A.plus?' + '+ABN[A.plus]:''):'')+'</option>'; }).join('')+'</optgroup>').join('')+'</select></label>';
+    if(a.type==='manual') h+='<div class="grid g3">'+fN('ac','Your AC',S.ac)+'</div>';
+    else h+='<div class="grid g3">'+fN('armor.base','Base AC',a.base)+fS('armor.cap','DEX bonus',a.cap,[[99,'Full DEX'],[2,'Up to +2'],[3,'Up to +3'],[0,'None']],true)+fS('armor.plus','Also add',a.plus,[['','—']].concat(ABOPT))+'</div>'+
+      '<div class="grid g3">'+fN('armor.magic','Magic +',a.magic)+fN('armor.str','STR needed',a.str)+fN('armor.shieldBonus','Shield AC',a.shieldBonus)+'</div>'+
+      fC('armor.shield','Using a shield',a.shield)+fC('armor.dis','Disadvantage on Stealth',a.dis)+
+      '<div class="hint">AC '+acV()+' = '+a.base+' + DEX '+sg(Math.min(am('dex'),a.cap))+(a.plus?' + '+ABN[a.plus]+' '+sg(am(a.plus)):'')+(a.shield?' + shield '+a.shieldBonus:'')+(a.magic?' + magic '+a.magic:'')+(bonus('ac')?' + items '+bonus('ac'):'')+(armorSlow()?' · STR under '+a.str+': speed −10':'')+'</div>';
+    h+='</div>'; }
   h+='<div class="card"><h2>Ability scores & saves</h2><div class="grid g3">'+ABIL.map(a=>fN('abilities.'+a,ABN[a],S.abilities[a])).join('')+'</div>'+
     '<div class="grid g3">'+ABIL.map(a=>fC('saveProf.'+a,ABN[a]+' save prof',S.saveProf[a])).join('')+'</div></div>';
   h+='<div class="card"><h2>Skills</h2><div class="grid g2">'+SKILLS.map(s=>fS('skills.'+s[0],s[0],skillLv(s[0]),[[0,'—'],[0.5,'Half (Jack)'],[1,'Proficient'],[2,'Expertise']],true)).join('')+'</div></div>';
@@ -1026,19 +1274,22 @@ function vSetup(){
     '<button class="btn sm" style="margin-top:10px" data-act="calcSlots">Fill in standard slots from my classes</button>'+
     fC('pactShortRest','All slots come back on a short rest (homebrew)',S.pactShortRest)+'</div>';
 
-  h+='<div class="card"><h2>Resources</h2>'+S.resources.map((r,i)=>'<div class="ed"><div class="hd"><b>'+esc(r.name||'Resource')+'</b>'+delBtn('resources',r.id)+'</div>'+
+  h+='<div class="card"><h2>Resources</h2><div class="hint">Class resources fill in and update from your classes and levels. You can still change anything — untick "Auto" to set your own numbers.</div>'+S.resources.map((r,i)=>{ const d=r.auto&&RES_DEFS.find(x=>x.key===r.auto); return '<div class="ed"><div class="hd"><b>'+esc(r.name||'Resource')+'</b>'+(d?'<span class="tag">'+esc(d.cls)+'</span>':'')+delBtn('resources',r.id)+'</div>'+
+    (d?fC('resources.'+i+'.autoMax','Auto: max'+(d.die?' and die':'')+' follow my class level',r.autoMax!==false)+(d.note?'<div class="hint">'+esc(d.note)+'</div>':''):'')+
     fT('resources.'+i+'.name','Name',r.name,'Superiority Dice')+'<div class="grid g3">'+fN('resources.'+i+'.max','Max',r.max)+fN('resources.'+i+'.cur','Current',r.cur)+
-    fS('resources.'+i+'.reset','Recovers on',r.reset,[['short','Short rest'],['long','Long rest'],['none','Manual']])+'</div>'+fT('resources.'+i+'.die','Die to roll on use (optional)',r.die,'1d8')+'</div>').join('')+
-    '<button class="btn" style="margin-top:8px" data-act="add" data-list="resources">+ Add resource</button></div>';
+    fS('resources.'+i+'.reset','Recovers on',r.reset,[['short','Short rest'],['long','Long rest'],['none','Manual']])+'</div>'+fT('resources.'+i+'.die','Die to roll on use (optional)',r.die,'1d8')+'</div>'; }).join('')+resAddSelect()+'</div>';
 
   h+='<div class="card"><h2>Attacks</h2>'+S.attacks.map((w,i)=>'<div class="ed"><div class="hd"><b>'+esc(w.name||'Attack')+'</b>'+delBtn('attacks',w.id)+'</div>'+
-    fT('attacks.'+i+'.name','Name',w.name,'Longsword')+'<div class="grid g3">'+fS('attacks.'+i+'.ability','Ability',w.ability,ABOPT.concat([['none','None']]))+fN('attacks.'+i+'.bonus','Magic / extra +',w.bonus)+
-    fT('attacks.'+i+'.dmg','Damage dice',w.dmg,'1d10')+'</div>'+fT('attacks.'+i+'.dmgType','Damage type',w.dmgType,'slashing')+
+    weaponSelect('attacks.'+i+'.wtype',w.wtype||'')+
+    fT('attacks.'+i+'.name','Name',w.name,'Longsword')+'<div class="grid g3">'+fS('attacks.'+i+'.ability','Ability',w.ability,[['finesse','Finesse (best of STR/DEX)']].concat(ABOPT,[['none','None']]))+fN('attacks.'+i+'.magic','Magic + (hit & dmg)',w.magic||0)+
+    fT('attacks.'+i+'.dmg','Damage dice',w.dmg,'1d10')+'</div>'+'<div class="grid g3">'+fT('attacks.'+i+'.dmgType','Damage type',w.dmgType,'slashing')+fT('attacks.'+i+'.vers','Two-handed dice',w.vers||'','1d10')+fN('attacks.'+i+'.bonus','Extra to hit',w.bonus||0)+'</div>'+
+    (w.vers?fC('attacks.'+i+'.twoHand','Using it two-handed ('+esc(w.vers)+')',w.twoHand):'')+
+    (monkLv()&&isMonkWeapon(w)?'<div class="hint">Monk weapon: uses the better of STR/DEX and your martial arts die ('+martialDie()+') if bigger.</div>':'')+
     '<div class="sub" style="margin-top:8px">Extra damage (each rolls with its own type)</div>'+(w.extra||[]).map((x,j)=>'<div class="effrow"><input type="text" data-bind="attacks.'+i+'.extra.'+j+'.dmg" value="'+esc(x.dmg)+'" placeholder="1d4"><input type="text" style="flex:1;width:auto" data-bind="attacks.'+i+'.extra.'+j+'.type" value="'+esc(x.type)+'" placeholder="fire · or: elemental (random)"><button class="btn sm warn" data-act="delWx" data-i="'+i+'" data-j="'+j+'">✕</button></div>').join('')+
     '<button class="btn sm" style="margin-top:6px" data-act="addWx" data-i="'+i+'">+ Add extra damage</button>'+
     '<div class="hint">Type "elemental" for a random acid/cold/fire/lightning/thunder, "any" for any type, or list your own: "fire, cold".</div>'+
-    fC('attacks.'+i+'.prof','Proficient',w.prof)+fC('attacks.'+i+'.addMod','Add ability mod to damage',w.addMod)+fA('attacks.'+i+'.notes','Notes',w.notes)+'</div>').join('')+
-    '<button class="btn" style="margin-top:8px" data-act="add" data-list="attacks">+ Add attack</button></div>';
+    fC('attacks.'+i+'.prof','Proficient'+(w.wtype&&w.autoProf!==false?' (from your classes)':''),wProf(w))+fC('attacks.'+i+'.addMod','Add ability mod to damage',w.addMod)+fA('attacks.'+i+'.notes','Notes',w.notes)+'</div>').join('')+
+    weaponSelect('',null)+'</div>';
 
   h+='<div class="card"><h2>Spells</h2>'+S.spells.map((s,i)=>'<div class="ed"><div class="hd"><b>'+esc(s.name||'Spell')+'</b>'+delBtn('spells',s.id)+'</div>'+
     fT('spells.'+i+'.name','Name',s.name,'Fireball')+'<div class="grid g3">'+fS('spells.'+i+'.level','Level',s.level,[[0,'Cantrip'],[1,'1'],[2,'2'],[3,'3'],[4,'4'],[5,'5'],[6,'6'],[7,'7'],[8,'8'],[9,'9']],true)+
@@ -1093,11 +1344,26 @@ function setPath(path,val){
 }
 app.addEventListener('change',e=>{
   const el=e.target; if(el.id==='portraitIn'){ loadPortrait(el.files[0]); return; }
+  if(el.id==='addPotSel'){ const v=el.value; if(!v) return; const ex=v!=='__custom'&&S.potions.find(x=>x.ptype===v); if(ex) ex.qty=(Number(ex.qty)||0)+1;
+    else S.potions.push(v==='__custom'?{id:uid(),ptype:'',name:'Custom potion',qty:1,kind:'heal',dice:'2d4+2',dtype:'',save:'',dc:13,dur:'',note:'',fx:[]}:potionFromKey(v));
+    touch(); render(); if(v==='__custom'){ const d=[...document.querySelectorAll('.potedit')].pop(); if(d) d.open=true; } return; }
+  if(el.id==='addAtkSel'){ const v=el.value; if(!v) return; const n={id:uid(),name:'',ability:'str',prof:true,bonus:0,magic:0,dmg:'1d6',dmgType:'',addMod:true,notes:'',extra:[]};
+    if(v!=='__custom') Object.assign(n,weaponTemplate(v)); S.attacks.push(n); touch(); render(); return; }
+  if(el.id==='addResSel'){ const v=el.value; if(!v) return; if(v==='__custom') S.resources.push({id:uid(),name:'',max:1,cur:1,reset:'long',die:''}); else addResourceFromDef(v); touch(); render(); return; }
   const p=el.dataset&&el.dataset.bind; if(!p) return;
   let v=el.type==='checkbox'?el.checked:(el.dataset.num!==undefined?(el.value===''?0:Number(el.value)):el.value);
+  const wt=p.match(/^attacks\.(\d+)\.wtype$/);
+  if(wt){ const w=S.attacks[wt[1]]; const oldName=(WEAPONS[w.wtype]||[])[0]; if(v){ const t=weaponTemplate(v); if(w.name&&w.name!==oldName&&!Object.values(WEAPONS).some(x=>x[0]===w.name)) delete t.name; Object.assign(w,t); w.autoProf=true; } else { w.wtype=''; } touch(); render(); return; }
+  if(p==='armor.type'){ applyArmor(v); touch(); render(); return; }
+  if(/^attacks\.\d+\.prof$/.test(p)){ const w=S.attacks[p.split('.')[1]]; w.autoProf=false; }
   setPath(p,v);
   if(p==='hpMax'&&S.hp>hpMaxV()) S.hp=hpMaxV();
-  const m=p.match(/^resources\.(\d+)\.max$/); if(m){ const r=S.resources[m[1]]; if(r.cur>r.max) r.cur=r.max; }
+  if(p.startsWith('armor.')) el.setAttribute('data-rerender','');
+  if(/^potions\.\d+\.kind$/.test(p)) el.setAttribute('data-rerender','');
+  const m=p.match(/^resources\.(\d+)\.max$/); if(m){ const r=S.resources[m[1]]; if(r.auto){ r.autoMax=false; el.setAttribute('data-rerender',''); } if(r.cur>r.max) r.cur=r.max; }
+  const md=p.match(/^resources\.(\d+)\.die$/); if(md){ const r=S.resources[md[1]]; if(r.auto) r.autoDie=false; }
+  const ma=p.match(/^resources\.(\d+)\.autoMax$/); if(ma){ const r=S.resources[ma[1]]; if(r.autoMax){ r.autoDie=true; } el.setAttribute('data-rerender',''); }
+  if(p.startsWith('classes.')||p.startsWith('abilities.')) el.setAttribute('data-rerender','');
   const sm=p.match(/^slots\.(\d+)\.max$/); if(sm){ const sl=S.slots[sm[1]]; if(sl.used>sl.max) sl.used=sl.max; }
   touch();
   if(el.hasAttribute('data-rerender')) render();
@@ -1121,7 +1387,7 @@ document.addEventListener('click',e=>{
     case 'init': check('Initiative',initV()); break;
     case 'abil': check(ABN[b.dataset.a]+' check',am(b.dataset.a)); break;
     case 'save1': check(ABN[b.dataset.a]+' save',saveB(b.dataset.a)); break;
-    case 'skill': { const s=SKILLS.find(x=>x[0]===b.dataset.s); check(s[0],skillB(s[0],s[1])); break; }
+    case 'skill': { const s=SKILLS.find(x=>x[0]===b.dataset.s); if(s[0]==='Stealth'&&S.armor&&S.armor.type!=='manual'&&S.armor.dis) adv=adv==='a'?'n':'d'; check(s[0]+(s[0]==='Stealth'&&S.armor&&S.armor.dis&&S.armor.type!=='manual'?' (armour: disadvantage)':''),skillB(s[0],s[1])); break; }
     case 'atk': attackPick(find('attacks',id)); break;
     case 'atkGo': attack(find('attacks',id),[...pickSel]); break;
     case 'pUse': usePower(find('powers',id)); break;
@@ -1172,7 +1438,7 @@ document.addEventListener('click',e=>{
       if(L==='powers') Object.assign(n,POWER_DEF,{id:n.id,res:(S.resources[0]||{}).id||''});
       if(L==='features') Object.assign(n,{name:'',text:'',active:true,effects:[]});
       S[L].push(n); touch(); render(); break; }
-    case 'del': { const L=b.dataset.list; S[L]=S[L].filter(x=>x.id!==id); if(L==='classes') syncClasses(); touch(); render(); break; }
+    case 'del': { const L=b.dataset.list; if(L==='resources'){ const r=S.resources.find(x=>x.id===id); if(r&&r.auto){ S.resDismissed=S.resDismissed||{}; S.resDismissed[r.auto]=true; } } S[L]=S[L].filter(x=>x.id!==id); if(L==='classes') syncClasses(); touch(); render(); break; }
     case 'addEff': S.features[b.dataset.i].effects.push({target:'ac',value:1}); touch(); render(); break;
     case 'delEff': S.features[b.dataset.i].effects.splice(Number(b.dataset.j),1); touch(); render(); break;
     case 'export': exportJSON(); break;
@@ -1185,6 +1451,11 @@ document.addEventListener('click',e=>{
     case 'delChar': { if(CHARS.length<2) break; const i=CHARS.findIndex(x=>x.cid===b.dataset.c); const gone=CHARS.splice(i,1)[0]; if(S===gone) S=CHARS[0]; touch(); render(); toast('Deleted '+gone.name); break; }
     case 'exportChar': { const c=CHARS.find(x=>x.cid===b.dataset.c); exportJSON(c); break; }
     case 'cur': { const c=find('currency',id); const a=Math.abs(Number(document.getElementById('curAmt').value))||1; c.amt=(Number(c.amt)||0)+a*Number(b.dataset.d); touch(); render(); break; }
+    case 'potUse': usePotion(find('potions',id)); break;
+    case 'potQty': { const p=find('potions',id); p.qty=Math.max(0,(Number(p.qty)||0)+Number(b.dataset.d)); touch(); render(); break; }
+    case 'potEnd': S.features=S.features.filter(f=>f.id!==id); touch(); render(); toast('Effect ended'); break;
+    case 'potFxAdd': { const p=S.potions[b.dataset.i]; (p.fx=p.fx||[]).push({target:'ac',value:1}); touch(); render(); break; }
+    case 'potFxDel': S.potions[b.dataset.i].fx.splice(Number(b.dataset.j),1); touch(); render(); break;
     case 'qty': { const it=find('items',id); it.qty=Math.max(0,(Number(it.qty)||0)+Number(b.dataset.d)); touch(); render(); break; }
     case 'prep': { const sp=find('spells',id); sp.prep=sp.prep==='prepared'?'unprepared':'prepared'; touch(); render(); break; }
     case 'rmPortrait': S.portrait=''; touch(); render(); break;
