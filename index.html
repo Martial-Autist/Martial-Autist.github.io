@@ -767,13 +767,16 @@ embedded=toStore(embedded); local=toStore(local);
 const embTs = embedded ? (embedded.ts||0) : -1;
 let STORE = (local && (!embedded || (local.ts||0) > embTs)) ? local : embedded;
 let CHARS = STORE ? STORE.chars.filter(c=>c&&c.abilities).map(c=>{ const n=normalize(c); if(!n.cid) n.cid=uid(); return n; }) : [];
-if(!CHARS.length){ const e=example(); e.cid=uid(); CHARS=[e]; }
+let FIRST_RUN=false;
+if(!CHARS.length){ const n=blank(); n.cid=uid(); CHARS=[n]; FIRST_RUN=true; }
 let S = CHARS.find(c=>c.cid===(STORE&&STORE.cur)) || CHARS[0];
 let STORE_TS = STORE ? (STORE.ts||0) : 0;
 let savedTs = embTs;
 const storeJSON=()=>JSON.stringify({v:2,ts:STORE_TS,cur:S.cid,chars:CHARS});
 
 let tab='play'; try{ tab=localStorage.getItem(LS+':tab')||'play'; }catch(e){}
+if(FIRST_RUN) tab='chars';
+const isPristine=c=>c&&!(c.classes||[]).length&&(c.name||'New Character')==='New Character'&&!(c.attacks||[]).length&&!(c.spells||[]).length&&!(c.features||[]).length;
 let adv='n';
 const LOG=[];
 
@@ -1218,7 +1221,8 @@ function vChars(){
       '<div class="ci"><b>'+esc(c.name||'Unnamed')+'</b><div class="meta">'+(c.classes&&c.classes.length?esc(c.cls)+' · Level '+c.level:'No class yet')+'</div><div class="meta">HP '+c.hp+'/'+mx+' · AC '+c.ac+(c.bio&&c.bio.race?' · '+esc(c.bio.race):'')+'</div></div>'+
       (on?'<span class="tag">Playing</span>':'<button class="btn sm pri" data-act="switchChar" data-c="'+c.cid+'">Play</button>')+'</div>'+
       '<div class="charbtns"><button class="btn sm ghost" data-act="dupChar" data-c="'+c.cid+'">Duplicate</button><button class="btn sm ghost" data-act="exportChar" data-c="'+c.cid+'">Export</button>'+
-      (CHARS.length>1?'<button class="btn sm warn" data-act="delChar" data-c="'+c.cid+'" data-confirm>Delete</button>':'')+'</div>'; }).join('')+'</div>';
+      (!(CHARS.length===1&&isPristine(c))?'<button class="btn sm warn" data-act="delChar" data-c="'+c.cid+'" data-confirm>Delete</button>':'')+'</div>'; }).join('')+'</div>';
+  if(CHARS.length===1&&isPristine(CHARS[0])) h='<div class="card"><h2>Welcome!</h2><div class="note" style="color:var(--ink)">Give your character a name and tap Create — you\'ll pick a starting class next, and the sheet fills in your saves, hit points, resources and spell slots for you. Want a look around first? Add the example character.</div></div>';
   h+='<div class="card"><h2>Create a new character</h2><label class="f"><span>Name</span><input id="ncName" type="text" placeholder="e.g. Pip Thistlewick"></label>'+
     '<button class="btn pri" style="width:100%;margin-top:10px" data-act="newChar">Create & choose starting class</button>'+
     '<div class="hint">Then fill in ability scores, AC and the rest in Setup. Level up adds classes, HP, slots and resources for you.</div>'+
@@ -1445,10 +1449,10 @@ document.addEventListener('click',e=>{
     case 'copyExp': { const t=document.getElementById('expTxt'); try{ navigator.clipboard.writeText(t.value).then(()=>toast('Copied'),()=>{ t.select(); toast('Select all and copy'); }); }catch(err){ t.select(); } break; }
     case 'importOpen': openSheet('<h3>Import</h3><div class="sub">Pick a backup file, or paste backup text. It\'s added as a new character — nothing is replaced.</div><input type="file" id="impFile" accept=".json,application/json,text/plain" style="margin-top:8px"><textarea id="impTxt" placeholder="…or paste here" style="margin-top:8px;min-height:140px"></textarea><button class="btn pri" style="width:100%;margin-top:8px" data-act="impGo">Import</button>'); break;
     case 'impGo': { const f=document.getElementById('impFile').files[0]; if(f){ f.text().then(importText); } else importText(document.getElementById('impTxt').value); break; }
-    case 'newChar': { const n=blank(); n.cid=uid(); n.name=(document.getElementById('ncName')||{}).value||'New Character'; CHARS.push(n); S=n; touch(); tab='play'; render(); openLevelUp(); break; }
+    case 'newChar': { const nm=(document.getElementById('ncName')||{}).value||'New Character'; let n; if(CHARS.length===1&&isPristine(CHARS[0])){ n=CHARS[0]; n.name=nm; } else { n=blank(); n.cid=uid(); n.name=nm; CHARS.push(n); } S=n; touch(); tab='play'; render(); openLevelUp(); break; }
     case 'switchChar': { const c=CHARS.find(x=>x.cid===b.dataset.c); if(c){ S=c; LU=null; pickSel=new Set(); touch(); tab='play'; render(); window.scrollTo(0,0); toast('Now playing '+S.name); } break; }
     case 'dupChar': { const c=CHARS.find(x=>x.cid===b.dataset.c); const n=normalize(JSON.parse(JSON.stringify(c))); n.cid=uid(); n.name=(c.name||'Character')+' (copy)'; CHARS.push(n); touch(); render(); toast('Copied '+c.name); break; }
-    case 'delChar': { if(CHARS.length<2) break; const i=CHARS.findIndex(x=>x.cid===b.dataset.c); const gone=CHARS.splice(i,1)[0]; if(S===gone) S=CHARS[0]; touch(); render(); toast('Deleted '+gone.name); break; }
+    case 'delChar': { const i=CHARS.findIndex(x=>x.cid===b.dataset.c); const gone=CHARS.splice(i,1)[0]; if(!CHARS.length){ const n=blank(); n.cid=uid(); CHARS.push(n); } if(S===gone) S=CHARS[0]; touch(); render(); toast('Deleted '+gone.name); break; }
     case 'exportChar': { const c=CHARS.find(x=>x.cid===b.dataset.c); exportJSON(c); break; }
     case 'cur': { const c=find('currency',id); const a=Math.abs(Number(document.getElementById('curAmt').value))||1; c.amt=(Number(c.amt)||0)+a*Number(b.dataset.d); touch(); render(); break; }
     case 'potUse': usePotion(find('potions',id)); break;
