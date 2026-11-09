@@ -1,0 +1,1199 @@
+<!DOCTYPE html>
+<html lang="en" data-edition="store">
+<head>
+<meta charset="utf-8" data-keep>
+<meta name="viewport" content="width=device-width, initial-scale=1" data-keep>
+<meta name="description" content="A free, homebrew-friendly living character sheet for 5e. Tap to roll, track slots and resources, multiclass, and add anything your DM gives you." data-keep>
+<meta name="theme-color" content="#14110f" data-keep>
+<link rel="manifest" href="manifest.webmanifest" data-keep>
+<link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png" data-keep>
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png" data-keep>
+<title data-keep>Living Character Sheet</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" data-keep>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" data-keep>
+<style data-keep>
+:root{
+  --bg:#14110f; --panel:#1e1a17; --panel2:#272220; --line:#3a332e; --ink:#efe6da; --mute:#a89a8a;
+  --acc:#c0392b; --acc2:#e0a84f; --good:#5aa36a; --bad:#d9534f; --r:12px;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.4 Inter,system-ui,sans-serif}
+button{font:inherit;color:inherit;cursor:pointer}
+input,select,textarea{font:inherit;color:var(--ink);background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:8px;width:100%}
+textarea{min-height:70px;resize:vertical}
+h1,h2,h3{font-family:Cinzel,serif;margin:0}
+.wrap{max-width:760px;margin:0 auto;padding:0 12px 90px}
+header.top{position:sticky;top:0;z-index:5;background:linear-gradient(var(--bg) 85%,transparent);padding:10px 12px 6px;max-width:760px;margin:0 auto}
+.toprow{display:flex;align-items:center;gap:10px}
+.toprow .who{flex:1;min-width:0}
+.toprow h1{font-size:19px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sub{color:var(--mute);font-size:13px}
+.btn{background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:8px 12px}
+.btn.pri{background:var(--acc);border-color:var(--acc)}
+.btn.sm{padding:5px 9px;font-size:13px}
+.btn.ghost{background:transparent}
+.btn.warn{border-color:var(--bad);color:#ffb3b0}
+.btn[disabled]{opacity:.35;cursor:default}
+.save.dirty{background:var(--acc2);border-color:var(--acc2);color:#1b1208;font-weight:700}
+.tabs{display:flex;gap:4px;margin-top:8px;overflow-x:auto}
+.tabs button{flex:1;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:7px 4px;font-size:13px;white-space:nowrap}
+.tabs button.on{background:var(--ink);color:var(--bg);font-weight:700}
+.adv{display:flex;gap:4px;margin-top:6px}
+.adv button{flex:1;padding:5px;border-radius:8px;border:1px solid var(--line);background:var(--panel);font-size:12px}
+.adv button.on.n{background:var(--panel2);border-color:var(--mute)}
+.adv button.on.a{background:var(--good);border-color:var(--good);color:#071}
+.adv button.on.a{color:#04140a;font-weight:700}
+.adv button.on.d{background:var(--bad);border-color:var(--bad);font-weight:700}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:12px;margin-top:10px}
+.card h2{font-size:15px;color:var(--acc2);margin-bottom:8px;letter-spacing:.5px}
+.grid{display:grid;gap:8px}
+.g3{grid-template-columns:repeat(3,1fr)}
+.g2{grid-template-columns:repeat(2,1fr)}
+.g6{grid-template-columns:repeat(3,1fr)}
+@media(min-width:560px){.g6{grid-template-columns:repeat(6,1fr)}}
+.stat{background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:8px;text-align:center}
+.stat .k{font-size:11px;color:var(--mute);text-transform:uppercase;letter-spacing:1px}
+.stat .v{font-size:22px;font-weight:700}
+.stat .s{font-size:12px;color:var(--mute)}
+button.stat:active,.row:active{transform:scale(.98)}
+.row{display:flex;align-items:center;gap:8px;width:100%;background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:8px 10px;margin-top:6px;text-align:left}
+.row .nm{flex:1;min-width:0}
+.row .bn{font-weight:700;min-width:36px;text-align:right}
+.dot{width:9px;height:9px;border-radius:50%;border:1.5px solid var(--mute);flex:none}
+.dot.p{background:var(--mute)}
+.dot.e{background:var(--acc2);border-color:var(--acc2)}
+.cols2{columns:2;column-gap:8px}
+.cols2 .row{break-inside:avoid}
+@media(max-width:420px){.cols2{columns:1}}
+.hp{display:flex;align-items:center;gap:10px}
+.hp .big{font-size:34px;font-weight:700}
+.hp .big small{font-size:16px;color:var(--mute);font-weight:500}
+.bar{height:8px;border-radius:5px;background:var(--panel2);overflow:hidden;margin:8px 0}
+.bar i{display:block;height:100%;background:var(--good)}
+.hpctl{display:flex;gap:6px}
+.hpctl input{width:80px;flex:none;text-align:center}
+.res{display:flex;align-items:center;gap:6px;margin-top:6px;background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:8px 10px}
+.res .nm{flex:1}
+.res .ct{font-weight:700;min-width:44px;text-align:center}
+.pips{display:flex;gap:5px;flex-wrap:wrap}
+.pip{width:22px;height:22px;border-radius:50%;border:2px solid var(--acc2);background:var(--acc2);padding:0}
+.pip.used{background:transparent;border-color:var(--line)}
+.slotrow{display:flex;align-items:center;gap:10px;margin-top:6px}
+.slotrow .lv{width:34px;color:var(--mute);font-size:13px}
+.spell{background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:10px;margin-top:6px}
+.spell .t{display:flex;align-items:center;gap:8px}
+.spell .t b{flex:1}
+.meta{color:var(--mute);font-size:12.5px;margin-top:3px}
+.note{color:var(--mute);font-size:13px;margin-top:4px;white-space:pre-wrap}
+.lvhead{margin-top:12px;font-size:12px;color:var(--mute);text-transform:uppercase;letter-spacing:1px}
+.tag{display:inline-block;font-size:11.5px;padding:2px 7px;border-radius:20px;background:#3a2a20;color:var(--acc2);margin:4px 4px 0 0}
+.f{display:block;margin-top:8px}
+.f>span{display:block;font-size:12px;color:var(--mute);margin-bottom:3px}
+.chk{display:flex;align-items:center;gap:8px;margin-top:8px;font-size:14px}
+.chk input{width:auto}
+.ed{background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:10px;margin-top:8px}
+.ed .hd{display:flex;gap:8px;align-items:center}
+.ed .hd b{flex:1}
+.effrow{display:flex;gap:6px;margin-top:6px}
+.effrow select{flex:1}
+.effrow input{width:80px;flex:none}
+.effrow input,.effrow select{min-width:0}
+.effbox{border-top:1px dashed var(--line);padding-top:6px;margin-top:6px}
+.hint{color:var(--mute);font-size:12.5px;margin-top:6px}
+.switch{position:relative;width:42px;height:24px;border-radius:12px;background:var(--line);border:none;flex:none}
+.switch::after{content:"";position:absolute;top:3px;left:3px;width:18px;height:18px;border-radius:50%;background:var(--ink);transition:.15s}
+.switch.on{background:var(--good)}
+.switch.on::after{left:21px}
+#sheet{position:fixed;inset:0;background:rgba(0,0,0,.6);display:none;align-items:flex-end;justify-content:center;z-index:20}
+#sheet.show{display:flex}
+#sheet .box{background:var(--panel);border:1px solid var(--line);border-radius:16px 16px 0 0;width:100%;max-width:760px;padding:16px 16px 26px;max-height:85vh;overflow:auto}
+#sheet h3{font-size:18px;margin-bottom:6px}
+.rl{display:flex;align-items:baseline;gap:10px;padding:10px 0;border-top:1px solid var(--line)}
+.rl:first-of-type{border-top:none}
+.rl .lab{flex:1;color:var(--mute);text-transform:capitalize}
+.rl .val{font-size:30px;font-weight:700}
+.rl .det{font-size:12px;color:var(--mute)}
+.rl.crit .val{color:var(--acc2)}
+.rl.fumble .val{color:var(--bad)}
+.slotpick{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:10px}
+.slotpick button{padding:12px 6px;border-radius:10px;border:1px solid var(--line);background:var(--panel2)}
+.slotpick button small{display:block;color:var(--mute);font-size:11.5px}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.chip{border:1px solid var(--line);background:var(--panel2);border-radius:20px;padding:6px 12px;font-size:13.5px;text-align:left}
+.chip small{display:block;color:var(--mute);font-size:11px}
+.chip.on{background:var(--acc2);border-color:var(--acc2);color:#1b1208;font-weight:600}
+.chip.on small{color:#4a3510}
+.fab{position:fixed;right:16px;bottom:18px;width:56px;height:56px;border-radius:50%;border:none;background:var(--acc);font-size:26px;box-shadow:0 4px 14px rgba(0,0,0,.5);z-index:10}
+.stepper{background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:8px;text-align:center}
+.stepper>div{display:flex;align-items:center;justify-content:center;gap:10px;margin-top:4px}
+.stepper b{font-size:20px;min-width:34px}
+.dicegrid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:10px}
+.dicegrid button{padding:14px 6px;border-radius:10px;border:1px solid var(--line);background:var(--panel2);font-size:18px;font-weight:700}
+.dicegrid button small{display:block;font-size:11px;color:var(--mute);font-weight:400}
+.dicegrid .ad{border-color:var(--good)} .dicegrid .dd{border-color:var(--bad)}
+.libg{border-top:1px solid var(--line);margin-top:10px;padding-top:8px}
+.libg .hd{display:flex;align-items:center;gap:8px}.libg .hd b{flex:1;font-family:Cinzel,serif;color:var(--acc2)}
+.libi{display:flex;align-items:center;gap:8px;padding:6px 0}.libi>span:first-child{flex:1}
+.lvbig{margin-top:12px;padding:10px;border-radius:10px;background:var(--panel2);text-align:center}
+.lvbig b{font-size:22px;color:var(--acc2)}
+.pip.pact{border-color:#8e6cc0;background:#8e6cc0}.pip.pact.used{background:transparent;border-color:var(--line)}
+.charcard{display:flex;align-items:center;gap:10px;padding:10px;border:1px solid var(--line);border-radius:10px;background:var(--panel2);margin-top:10px}
+.charcard.on{border-color:var(--acc2)}
+.charcard .ci{flex:1;min-width:0}.charcard .ci b{font-family:Cinzel,serif}
+.thumb.ph{width:42px;height:42px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:var(--acc);font-weight:700;flex:none}
+.charbtns{display:flex;gap:6px;justify-content:flex-end;margin-top:6px}
+.tabs button{flex:1 0 auto;padding:7px 9px}
+.footer{text-align:center;color:var(--mute);font-size:12px;margin:36px 0 10px;opacity:.7;line-height:1.8}
+.linkish{background:none;border:none;color:var(--mute);font-size:12px;padding:2px 4px;text-decoration:underline dotted;cursor:pointer}
+img.thumb{width:42px;height:42px;border-radius:50%;object-fit:cover;border:2px solid var(--acc2);cursor:pointer;flex:none}
+img.portrait{max-width:100%;max-height:420px;border-radius:12px;border:1px solid var(--line)}
+#toast{position:fixed;left:50%;bottom:20px;transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 14px;border-radius:10px;font-size:14px;z-index:30;display:none;max-width:90vw}
+.log .row{display:block}
+.empty{color:var(--mute);font-size:14px;padding:6px 0}
+</style>
+</head>
+<body>
+<div id="app" data-keep></div>
+<div id="sheet" data-keep></div>
+<div id="toast" data-keep></div>
+<script type="application/json" id="saved" data-keep>null</script>
+<script data-keep>
+(function(){
+const SRC = '<!DOCTYPE html>\n' + document.documentElement.outerHTML;
+const EDITION = document.documentElement.getAttribute('data-edition')||'personal';
+const IS_TWA = (()=>{ try{ if(document.referrer.startsWith('android-app://')) localStorage.setItem('ls5e:twa','1'); return localStorage.getItem('ls5e:twa')==='1'; }catch(e){ return false; } })();
+const ABIL = ['str','dex','con','int','wis','cha'];
+const ABN = {str:'STR',dex:'DEX',con:'CON',int:'INT',wis:'WIS',cha:'CHA'};
+const SKILLS = [['Acrobatics','dex'],['Animal Handling','wis'],['Arcana','int'],['Athletics','str'],['Deception','cha'],['History','int'],['Insight','wis'],['Intimidation','cha'],['Investigation','int'],['Medicine','wis'],['Nature','int'],['Perception','wis'],['Performance','cha'],['Persuasion','cha'],['Religion','int'],['Sleight of Hand','dex'],['Stealth','dex'],['Survival','wis']];
+const TARGETS = [['ac','AC'],['hpMax','Max HP'],['speed','Speed'],['init','Initiative'],['prof','Proficiency bonus'],['spellDC','Spell save DC'],['spellAtk','Spell attack bonus'],['spellDmg','Spell damage'],['atk','Weapon attack bonus'],['dmg','Weapon damage'],['allSaves','All saving throws'],['allChecks','All skill checks']]
+  .concat(ABIL.map(a=>['score:'+a,ABN[a]+' score']))
+  .concat(ABIL.map(a=>['save:'+a,ABN[a]+' save']))
+  .concat(SKILLS.map(s=>['skill:'+s[0],s[0]+' check']));
+const TNAME = Object.fromEntries(TARGETS);
+/* ---------- classes & level up ---------- */
+const CLASSES={Artificer:['d8','halfUp','int'],Barbarian:['d12','none',''],Bard:['d8','full','cha'],Cleric:['d8','full','wis'],Druid:['d8','full','wis'],Fighter:['d10','none',''],Monk:['d8','none',''],Paladin:['d10','half','cha'],Ranger:['d10','half','wis'],Rogue:['d8','none',''],Sorcerer:['d6','full','cha'],Warlock:['d8','pact','cha'],Wizard:['d6','full','int']};
+const CAST_OPT=[['none','No spell slots'],['full','Full caster'],['half','Half caster (Paladin, Ranger)'],['halfUp','Half, rounded up (Artificer)'],['third','Third caster (Eldritch Knight, Arcane Trickster)'],['pact','Pact Magic (Warlock)']];
+const SLOT_TABLE=[[],[2],[3],[4,2],[4,3],[4,3,2],[4,3,3],[4,3,3,1],[4,3,3,2],[4,3,3,3,1],[4,3,3,3,2],[4,3,3,3,2,1],[4,3,3,3,2,1],[4,3,3,3,2,1,1],[4,3,3,3,2,1,1],[4,3,3,3,2,1,1,1],[4,3,3,3,2,1,1,1],[4,3,3,3,2,1,1,1,1],[4,3,3,3,3,1,1,1,1],[4,3,3,3,3,2,1,1,1],[4,3,3,3,3,2,2,1,1]];
+const ASI_LV={Fighter:[4,6,8,12,14,16,19],Rogue:[4,8,10,12,16,19]};
+const asiLevels=n=>ASI_LV[n]||[4,8,12,16,19];
+function hdPools(){ const m={}; S.classes.forEach(c=>{ const k=c.hd||'d8'; m[k]=(m[k]||0)+(Number(c.level)||0); });
+  return Object.keys(m).sort((a,b)=>Number(b.slice(1))-Number(a.slice(1))).map(k=>({die:k,max:m[k],used:Math.min(m[k],Number(S.hdUsed[k])||0)})); }
+const totalLevel=cl=>(cl||S.classes).reduce((a,c)=>a+(Number(c.level)||0),0);
+const profFor=L=>2+Math.floor((Math.max(1,L)-1)/4);
+const clsText=cl=>(cl||S.classes).map(c=>(c.name||'Class')+((cl||S.classes).length>1?' '+c.level:'')+(c.sub?' ('+c.sub+')':'')).join(' / ');
+function casterLevel(cl){
+  const casters=cl.filter(c=>['full','half','halfUp','third'].includes(c.cast));
+  if(casters.length===1){ const c=casters[0], l=Number(c.level)||0;
+    return c.cast==='full'?l:c.cast==='halfUp'?Math.ceil(l/2):c.cast==='half'?(l<2?0:Math.ceil(l/2)):(l<3?0:Math.ceil(l/3)); }
+  return casters.reduce((a,c)=>{ const l=Number(c.level)||0; return a+(c.cast==='full'?l:c.cast==='halfUp'?Math.ceil(l/2):c.cast==='half'?Math.floor(l/2):Math.floor(l/3)); },0);
+}
+function slotsFor(cl){ const row=SLOT_TABLE[Math.min(20,casterLevel(cl))]||[]; const o={}; for(let i=1;i<=9;i++) o[i]=row[i-1]||0; return o; }
+function pactFor(cl){ const w=cl.filter(c=>c.cast==='pact').reduce((a,c)=>a+(Number(c.level)||0),0); if(!w) return {level:0,max:0};
+  return {level:Math.min(5,Math.ceil(w/2)),max:w>=17?4:w>=11?3:w>=2?2:1}; }
+function syncClasses(){ S.level=totalLevel(); S.cls=clsText(); }
+const SAVES={Artificer:['con','int'],Barbarian:['str','con'],Bard:['dex','cha'],Cleric:['wis','cha'],Druid:['int','wis'],Fighter:['str','con'],Monk:['str','dex'],Paladin:['wis','cha'],Ranger:['str','dex'],Rogue:['dex','int'],Sorcerer:['con','cha'],Warlock:['wis','cha'],Wizard:['int','wis']};
+const whoLine=()=>S.classes.length?esc(S.cls)+' · Level '+S.level:'No class yet — tap ⬆ Level up';
+function resSuggest(r,cl,L){
+  const lv=n=>cl.filter(c=>(c.name||'').toLowerCase()===n).reduce((a,c)=>a+(Number(c.level)||0),0);
+  const n=(r.name||'').toLowerCase();
+  if(n==='hit dice') return L;
+  if(n==='lay on hands'&&lv('paladin')) return 5*lv('paladin');
+  if(n==='arcane ward'&&lv('wizard')>=2) return 2*lv('wizard')+am('int');
+  if(n==='arcane recovery') return 1;
+  if(n.startsWith('sorcery')&&lv('sorcerer')>=2) return lv('sorcerer');
+  if(n.startsWith('ki')&&lv('monk')>=2) return lv('monk');
+  if(n==='rages'&&lv('barbarian')){ const b=lv('barbarian'); return b>=20?99:b>=17?6:b>=12?5:b>=6?4:b>=3?3:2; }
+  if(n.startsWith('superiority')&&lv('fighter')>=3){ const f=lv('fighter'); return f>=15?6:f>=7?5:4; }
+  if(n==='action surge'&&lv('fighter')>=2) return lv('fighter')>=17?2:1;
+  if(n.startsWith('bardic')) return Math.max(1,am('cha'));
+  if(n==='channel divinity'){ const c=lv('cleric'); return Math.max(c>=18?3:c>=6?2:c>=2?1:0, lv('paladin')>=3?1:0)||r.max; }
+  return null;
+}
+const CLASS_RES=[['Barbarian',1,'rage'],['Bard',1,'bi'],['Cleric',2,'cd'],['Druid',2,'wild'],['Fighter',1,'sw'],['Fighter',2,'as'],['Monk',2,'ki'],['Paladin',1,'loh'],['Paladin',3,'cd'],['Sorcerer',2,'sorc'],['Wizard',1,'arec'],['Wizard',2,'ward',c=>/abjur/i.test(c.sub||'')]];
+function newResFor(cl){ const out=[]; CLASS_RES.forEach(([cn,lv,key,cond])=>{ const c=cl.find(x=>(x.name||'').toLowerCase()===cn.toLowerCase()); if(!c||Number(c.level)<lv||(cond&&!cond(c))) return;
+  const name=LR[key][0]; if(S.resources.some(r=>(r.name||'').toLowerCase()===name.toLowerCase())||out.some(o=>o.key===key)) return; out.push({key,name}); }); return out; }
+const LU_TIPS=[['Sorcerer',3,'Choose 2 Metamagic options — Setup → 📚 Add from library'],['Sorcerer',10,'One more Metamagic option'],['Sorcerer',17,'One more Metamagic option'],['Fighter',3,'Battle Master? Add maneuvers from the library'],['Monk',2,'Ki options are in the library'],['Barbarian',1,'Rage is in the library'],['Paladin',2,'Divine Smite is in the library']];
+/* ---------- tip jar (quiet) ---------- */
+const KOFI_URL='https://ko-fi.com/martialautist';                       // set to your Ko-fi page, e.g. https://ko-fi.com/yourname
+const TIP_IDS=['tip_small','tip_medium','tip_large']; // in-app product IDs to create in Play Console
+const TIP_NAMES={tip_small:'A coffee',tip_medium:'Coffee and a snack',tip_large:'A round for the table'};
+let dgs=null;
+async function playBilling(){ if(dgs) return dgs; if(!('getDigitalGoodsService' in window)) return null;
+  try{ dgs=await window.getDigitalGoodsService('https://play.google.com/billing'); return dgs; }catch(e){ return null; } }
+async function openCoffee(){
+  let h='<h3>☕ Thanks for finding this</h3><div class="sub">This sheet is free and always will be. If it\'s made your table a bit easier, a coffee keeps the dev going.</div>';
+  const svc=await playBilling();
+  if(svc){ let items=[]; try{ items=await svc.getDetails(TIP_IDS); }catch(e){}
+    items.sort((a,b)=>TIP_IDS.indexOf(a.itemId)-TIP_IDS.indexOf(b.itemId));
+    h+=items.length?'<div class="grid" style="margin-top:12px">'+items.map(it=>'<button class="btn" data-act="tip" data-id="'+esc(it.itemId)+'">'+esc(TIP_NAMES[it.itemId]||it.title)+' — '+esc(new Intl.NumberFormat(undefined,{style:'currency',currency:it.price.currency}).format(Number(it.price.value)))+'</button>').join('')+'</div>'
+      :'<div class="hint">Tips aren\'t available right now.</div>';
+  } else if(IS_TWA){ h+='<div class="hint" style="margin-top:12px">Tips aren\'t available right now — but thanks for looking.</div>'; }
+  else if(KOFI_URL){ h+='<a class="btn pri" style="display:block;text-align:center;margin-top:12px;text-decoration:none;color:inherit" href="'+esc(KOFI_URL)+'" target="_blank" rel="noopener">Buy me a coffee on Ko-fi</a><div class="hint">Opens Ko-fi in your browser. Link: '+esc(KOFI_URL)+'</div>'; }
+  else h+='<div class="hint" style="margin-top:12px">The tip jar isn\'t set up yet — but thanks for looking.</div>';
+  h+='<button class="btn ghost" style="width:100%;margin-top:10px" data-act="close">Close</button>';
+  openSheet(h);
+}
+async function buyTip(sku){
+  const svc=await playBilling(); if(!svc) return;
+  try{
+    const req=new PaymentRequest([{supportedMethods:'https://play.google.com/billing',data:{sku}}],{total:{label:'Total',amount:{currency:'USD',value:'0'}}});
+    const resp=await req.show();
+    const token=resp.details&&resp.details.purchaseToken;
+    if(token){ try{ await svc.consume(token); }catch(e){} }
+    await resp.complete('success'); closeSheet(); toast('Thank you! ☕ That genuinely made my day.');
+  }catch(e){ if(e&&e.name!=='AbortError') toast('The tip didn\'t go through — nothing was charged.'); }
+}
+let LU=null;
+function openLevelUp(){ LU={pick:!S.classes.length?'new':S.classes.length===1?S.classes[0].id:'',newName:'Fighter',hp:null,hd:null,cast:null}; drawLevelUp(); }
+function luClasses(){
+  const cl=S.classes.map(c=>Object.assign({},c));
+  if(LU.pick==='new'){ const p=CLASSES[LU.newName]||['d8','none','']; cl.push({id:'new',name:LU.newName==='Other'?(LU.customName||'New class'):LU.newName,sub:'',level:1,hd:LU.hd||p[0],cast:LU.cast||p[1]}); }
+  else { const c=cl.find(x=>x.id===LU.pick); if(c) c.level=(Number(c.level)||0)+1; }
+  return cl;
+}
+function drawLevelUp(){
+  const first=!S.classes.length;
+  let h=first?'<h3>Choose your starting class</h3><div class="sub">Your first class sets your saving throws.</div><div class="chips" style="display:none">':'<h3>Level up</h3><div class="sub">Which class gains the level?</div><div class="chips">'+
+    S.classes.map(c=>'<button class="chip '+(LU.pick===c.id?'on':'')+'" data-act="luPick" data-id="'+c.id+'">'+esc(c.name||'Class')+'<small>'+c.level+' → '+(Number(c.level)+1)+'</small></button>').join('')+
+    '<button class="chip '+(LU.pick==='new'?'on':'')+'" data-act="luPick" data-id="new">+ New class<small>multiclass</small></button></div>';
+  if(!LU.pick){ openSheet(h+'<button class="btn ghost" style="width:100%;margin-top:12px" data-act="close">Cancel</button>'); return; }
+  const cl=luClasses(); const tgt=LU.pick==='new'?cl[cl.length-1]:cl.find(c=>c.id===LU.pick);
+  const L=totalLevel(cl); const die=Number(String(tgt.hd||'d8').replace(/\D/g,''))||8; const con=am('con');
+  if(LU.pick==='new'){
+    h+='<label class="f"><span>New class</span><select id="luNew" data-luredraw>'+Object.keys(CLASSES).concat(['Other']).map(n=>'<option '+(n===LU.newName?'selected':'')+'>'+n+'</option>').join('')+'</select></label>'+
+      (LU.newName==='Other'?'<label class="f"><span>Class name</span><input id="luCustom" type="text" value="'+esc(LU.customName||'')+'"></label>':'')+
+      '<div class="grid g2"><label class="f"><span>Hit die</span><select id="luHd">'+['d6','d8','d10','d12'].map(d=>'<option '+(d===tgt.hd?'selected':'')+'>'+d+'</option>').join('')+'</select></label>'+
+      '<label class="f"><span>Spellcasting</span><select id="luCast">'+CAST_OPT.map(o=>'<option value="'+o[0]+'" '+(o[0]===tgt.cast?'selected':'')+'>'+o[1]+'</option>').join('')+'</select></label></div>'+
+      '<div class="hint">Multiclassing usually needs 13+ in the main stats of both classes. The sheet won\'t stop you — that\'s between you and your DM.</div>';
+  }
+  h+='<div class="lvbig">Character level '+S.level+' → <b>'+L+'</b> · '+esc(tgt.name)+' '+tgt.level+'</div>';
+  const avg=Math.floor(die/2)+1;
+  if(LU.hp==null) LU.hp=Math.max(1,(first?die:avg)+con);
+  h+='<div class="sub" style="margin-top:10px">Hit points (d'+die+', CON '+sg(con)+')</div><div class="effrow"><input id="luHp" type="number" inputmode="numeric" value="'+LU.hp+'" style="width:90px">'+
+    (first?'<span class="sub" style="align-self:center">Level 1: full hit die</span>':'<button class="btn sm" data-act="luAvg" data-v="'+Math.max(1,avg+con)+'">Average '+Math.max(1,avg+con)+'</button>')+(first?'':'<button class="btn sm" data-act="luRoll" data-d="'+die+'">Roll d'+die+'</button>')+'</div>'+
+    '<div class="hint">Max HP '+hpMaxV()+' → '+(hpMaxV()+Number(LU.hp))+'</div>';
+  const np=profFor(L);
+  if(np!==S.prof) h+=fCl('luProf','Proficiency bonus '+sg(S.prof)+' → '+sg(np),true);
+  const ns=slotsFor(cl), np2=pactFor(cl); const cur=[1,2,3,4,5,6,7,8,9].map(i=>S.slots[i].max).join(','), nw=[1,2,3,4,5,6,7,8,9].map(i=>ns[i]).join(',');
+  const slotTxt=o=>{ const a=[]; for(let i=1;i<=9;i++) if(o[i]) a.push('L'+i+'×'+o[i]); return a.join(' ')||'none'; };
+  const hasCaster=cl.some(c=>c.cast!=='none');
+  if(hasCaster&&cur!==nw) h+=fCl('luSlots','Spell slots: '+slotTxt(Object.fromEntries([1,2,3,4,5,6,7,8,9].map(i=>[i,S.slots[i].max])))+' → '+slotTxt(ns),true)+'<div class="hint">Untick to keep custom slots your DM gave you.</div>';
+  if(np2.max&&(np2.max!==S.pact.max||np2.level!==S.pact.level)) h+=fCl('luPact','Pact slots: '+S.pact.max+'× level '+S.pact.level+' → '+np2.max+'× level '+np2.level,true);
+  if(asiLevels(tgt.name).includes(tgt.level)){
+    h+='<div class="sub" style="margin-top:12px">Ability Score Improvement (or take a feat below)</div><div class="grid g3">'+ABIL.map(a=>'<label class="f"><span>'+ABN[a]+' '+S.abilities[a]+'</span><input id="luAsi_'+a+'" type="number" inputmode="numeric" value="0" min="0" max="2"></label>').join('')+'</div>';
+  }
+  h+='<label class="f"><span>Subclass'+(tgt.level<=3?' (most classes pick one at level 1–3)':'')+'</span><input id="luSub" type="text" value="'+esc(tgt.sub||'')+'" placeholder="e.g. Battle Master"></label>';
+  const nr=newResFor(cl);
+  if(nr.length) h+='<div class="sub" style="margin-top:12px">New for your class</div>'+nr.map(o=>{ const sgg=resSuggest({name:o.name,max:LR[o.key][1]},cl,L); return fCl('luNR_'+o.key,'Add '+o.name+' (max '+(sgg==null?LR[o.key][1]:sgg)+')',true); }).join('');
+  const tips=LU_TIPS.filter(t=>t[0].toLowerCase()===(tgt.name||'').toLowerCase()&&t[1]===Number(tgt.level));
+  if(tips.length) h+='<div class="hint" style="color:var(--acc2)">'+tips.map(t=>'★ '+esc(t[2])).join('<br>')+'</div>';
+  if(S.resources.length){ h+='<div class="sub" style="margin-top:12px">Resources (new max)</div><div class="grid g2">'+S.resources.map(r=>{ const sgg=resSuggest(r,cl,L); return '<label class="f"><span>'+esc(r.name)+' (now '+r.max+')</span><input id="luRes_'+r.id+'" type="number" inputmode="numeric" value="'+(sgg==null?r.max:sgg)+'"></label>'; }).join('')+'</div>'; }
+  h+='<div class="sub" style="margin-top:12px">New feature or feat (optional)</div><input id="luFeat" type="text" placeholder="Name, e.g. Extra Attack" style="margin-top:4px"><textarea id="luFeatTxt" placeholder="What it does" style="margin-top:6px;min-height:56px"></textarea>';
+  h+='<button class="btn pri" style="width:100%;margin-top:14px" data-act="luGo">Level up to '+L+'</button><button class="btn ghost" style="width:100%;margin-top:8px" data-act="close">Cancel</button>';
+  openSheet(h);
+}
+const fCl=(id,l,on)=>'<label class="chk"><input type="checkbox" id="'+id+'" '+(on?'checked':'')+'> '+l+'</label>';
+function luRead(){ const g=id=>document.getElementById(id);
+  if(g('luHp')) LU.hp=Number(g('luHp').value)||0;
+  if(g('luNew')) LU.newName=g('luNew').value; if(g('luCustom')) LU.customName=g('luCustom').value; }
+function applyLevelUp(){
+  luRead(); const g=id=>document.getElementById(id);
+  const cl=luClasses(); let tgt;
+  if(LU.pick==='new'){ tgt=cl[cl.length-1]; tgt.id=uid(); }
+  else tgt=cl.find(c=>c.id===LU.pick);
+  if(g('luSub')) tgt.sub=g('luSub').value.trim();
+  const L=totalLevel(cl);
+  const hp=Number(LU.hp)||0; if(!S.classes.length){ S.hpMax=hp; S.hp=hp; } else { S.hpMax+=hp; S.hp+=hp; }
+  if(g('luProf')&&g('luProf').checked) S.prof=profFor(L);
+  if(g('luSlots')&&g('luSlots').checked){ const ns=slotsFor(cl); for(let i=1;i<=9;i++){ S.slots[i].max=ns[i]; S.slots[i].used=Math.min(S.slots[i].used,ns[i]); } }
+  if(g('luPact')&&g('luPact').checked){ const p=pactFor(cl); S.pact.max=p.max; S.pact.level=p.level; S.pact.used=Math.min(S.pact.used,p.max); }
+  const conBefore=am('con');
+  ABIL.forEach(a=>{ const el=g('luAsi_'+a); if(el) S.abilities[a]+=Number(el.value)||0; });
+  const conGain=(am('con')-conBefore)*L; if(conGain){ S.hpMax+=conGain; S.hp+=conGain; }
+  S.resources.forEach(r=>{ const el=g('luRes_'+r.id); if(!el) return; const nm=Number(el.value)||0; const diff=nm-r.max; r.max=nm; r.cur=Math.max(0,Math.min(nm,r.cur+Math.max(0,diff))); });
+  newResFor(cl).forEach(o=>{ const el=g('luNR_'+o.key); if(el&&!el.checked) return; const d=LR[o.key]; const sgg=resSuggest({name:d[0],max:d[1]},cl,L); const mx=sgg==null?d[1]:sgg;
+    S.resources.push({id:uid(),name:d[0],max:mx,cur:mx,reset:d[2],die:d[3]}); });
+  const fn=g('luFeat')&&g('luFeat').value.trim(); if(fn) S.features.push({id:uid(),name:fn,text:g('luFeatTxt').value,active:true,effects:[]});
+  if(!S.classes.length&&SAVES[tgt.name]){ S.saveProf={}; SAVES[tgt.name].forEach(a=>S.saveProf[a]=true); if(CLASSES[tgt.name][2]) S.castAbility=CLASSES[tgt.name][2]; }
+  if(S.castAbility==='none'&&tgt.cast!=='none'&&CLASSES[tgt.name]&&CLASSES[tgt.name][2]) S.castAbility=CLASSES[tgt.name][2];
+  S.classes=cl; syncClasses(); touch(); closeSheet(); render(); toast('Level '+L+'! Max HP +'+(hp+conGain)+(conGain?' (incl. '+conGain+' from higher CON)':'')+(fn?', added '+fn:''));
+}
+/* ---------- powers library (short paraphrased summaries) ---------- */
+const POWER_DEF={name:'',group:'',attach:'self',res:'',costType:'fixed',cost:1,dmg:'',rollLabel:'',hit:'',adv:false,save:'',dcType:'spell',dcStat:'str',dcFixed:10,feat:'',note:''};
+const LR={sorc:['Sorcery Points',2,'long',''],sup:['Superiority Dice',4,'short','1d8'],ki:['Ki Points',2,'short',''],rage:['Rages',2,'long',''],cd:['Channel Divinity',1,'short',''],bi:['Bardic Inspiration',3,'long','1d6'],sw:['Second Wind',1,'short',''],as:['Action Surge',1,'short',''],wild:['Wild Shape',2,'short',''],ff:['Favored Foe',2,'long','1d4'],fog:['Flash of Genius',1,'long',''],loh:['Lay on Hands',5,'long',''],arec:['Arcane Recovery',1,'long',''],ward:['Arcane Ward',0,'long',''],
+  shot:['Arcane Shot',2,'short',''],fspirit:['Fighting Spirit',3,'long',''],psi:['Psionic Energy Dice',4,'long','1d6'],giant:["Giant's Might",2,'long',''],
+  jolt:['Arcane Jolt',3,'long',''],fbg:['Favored by the Gods',1,'short',''],hex:["Hexblade's Curse",1,'short',''],bond:['Emboldening Bond',2,'long',''],
+  bsong:['Bladesong',2,'long',''],echo:['Unleash Incarnation',2,'long',''],breath:['Breath of the Dragon',2,'long','']};
+const BOOKS={PHB:"Player's Handbook",P24:"PHB 2024",XGE:"Xanathar's",TCE:"Tasha's",FTD:"Fizban's",EGW:"Wildemount",SCAG:"Sword Coast"};
+const P=(name,attach,r,cost,o)=>Object.assign({name,attach,r,cost},o||{});
+const BM={dc:'calc',dcStat:'str'};
+const LIB=[
+ {g:'Metamagic (Sorcerer)',items:[
+  P('Careful Spell','spell','sorc',1,{note:'Up to CHA mod creatures automatically pass the save'}),
+  P('Distant Spell','spell','sorc',1,{note:'Double the range; touch spells reach 30 ft'}),
+  P('Empowered Spell','spell','sorc',1,{note:'Reroll up to CHA mod damage dice (can stack with another option)'}),
+  P('Extended Spell','spell','sorc',1,{note:'Double the duration (max 24 hours)'}),
+  P('Heightened Spell','spell','sorc',3,{note:'One target has disadvantage on its first save'}),
+  P('Quickened Spell','spell','sorc',2,{note:'Cast as a bonus action'}),
+  P('Subtle Spell','spell','sorc',1,{note:'No verbal or somatic components'}),
+  P('Twinned Spell','spell','sorc','levelMin1',{note:'Single-target spell hits a second creature'}),
+  P('Seeking Spell','spell','sorc',2,{src:'TCE',note:'Reroll the d20 if the spell attack misses'}),
+  P('Transmuted Spell','spell','sorc',1,{src:'TCE',note:'Swap damage type: acid, cold, fire, lightning, poison or thunder'})]},
+ {g:'Maneuvers (Battle Master)',items:[
+  P('Precision Attack','attack','sup',1,{hit:'die',note:'Die added to the attack roll'}),
+  P('Trip Attack','attack','sup',1,Object.assign({dmg:'die',save:'str',note:'Large or smaller: knocked prone on a failed save'},BM)),
+  P('Pushing Attack','attack','sup',1,Object.assign({dmg:'die',save:'str',note:'Large or smaller: pushed up to 15 ft on a failed save'},BM)),
+  P('Disarming Attack','attack','sup',1,Object.assign({dmg:'die',save:'str',note:'Drops one held item on a failed save'},BM)),
+  P('Menacing Attack','attack','sup',1,Object.assign({dmg:'die',save:'wis',note:'Frightened of you until end of your next turn on a failed save'},BM)),
+  P('Goading Attack','attack','sup',1,Object.assign({dmg:'die',save:'wis',note:'Disadvantage attacking anyone but you until end of your next turn'},BM)),
+  P('Distracting Strike','attack','sup',1,{dmg:'die',note:'Next attack on the target by someone else has advantage'}),
+  P('Lunging Attack','attack','sup',1,{dmg:'die',note:'+5 ft reach for this attack'}),
+  P('Maneuvering Attack','attack','sup',1,{dmg:'die',note:'Ally uses reaction to move half speed without provoking from target'}),
+  P('Feinting Attack','attack','sup',1,{dmg:'die',adv:true,note:'Bonus action; target within 5 ft'}),
+  P('Riposte','attack','sup',1,{dmg:'die',note:'Reaction when a creature misses you in melee'}),
+  P('Brace','attack','sup',1,{src:'TCE',dmg:'die',note:'Reaction when a creature moves into your reach'}),
+  P('Quick Toss','attack','sup',1,{src:'TCE',dmg:'die',note:'Bonus action thrown weapon attack'}),
+  P('Sweeping Attack','self','sup',1,{dmg:'die',rollLabel:'Damage to a 2nd creature',note:'After a melee hit; 2nd target within 5 ft that the roll would hit'}),
+  P("Commander's Strike",'self','sup',1,{dmg:'die',rollLabel:'Ally adds to damage',note:'Give up one attack; ally uses reaction to attack'}),
+  P('Parry','self','sup',1,{dmg:'die+dex',rollLabel:'Damage reduced',note:'Reaction when hit in melee'}),
+  P('Rally','self','sup',1,{dmg:'die+cha',rollLabel:'Temp HP for an ally',note:'Bonus action'}),
+  P('Evasive Footwork','self','sup',1,{dmg:'die',rollLabel:'Added to AC while moving'}),
+  P('Grappling Strike','self','sup',1,{src:'TCE',dmg:'die',rollLabel:'Added to Athletics (grapple)',note:'Bonus action right after a melee hit'}),
+  P('Ambush','self','sup',1,{src:'TCE',dmg:'die',rollLabel:'Added to Stealth or initiative'}),
+  P('Bait and Switch','self','sup',1,{src:'TCE',dmg:'die',rollLabel:'+AC until start of your next turn',note:'Swap places with a willing creature within 5 ft'}),
+  P('Commanding Presence','self','sup',1,{src:'TCE',dmg:'die',rollLabel:'Added to Intimidation, Performance or Persuasion'}),
+  P('Tactical Assessment','self','sup',1,{src:'TCE',dmg:'die',rollLabel:'Added to Investigation, History or Insight'})]},
+ {g:'Ki (Monk)',items:[
+  P('Flurry of Blows','self','ki',1,{note:'Bonus action after the Attack action: two unarmed strikes'}),
+  P('Patient Defense','self','ki',1,{note:'Dodge as a bonus action'}),
+  P('Step of the Wind','self','ki',1,{note:'Disengage or Dash as a bonus action; jump distance doubled'}),
+  P('Stunning Strike','attack','ki',1,{save:'con',dc:'calc',dcStat:'wis',note:'On a hit: stunned until end of your next turn on a failed save'}),
+  P('Focused Aim','self','ki',1,{src:'TCE',dmg:'2',rollLabel:'Added to a missed attack',note:'+2 per ki, up to 3 ki: use once per point'}),
+  P('Quickened Healing','self','ki',2,{src:'TCE',dmg:'martial+prof',rollLabel:'HP regained',note:'Action'})]},
+ {g:'Barbarian',items:[
+  P('Rage','self','rage',1,{feat:{name:'Raging',text:'Advantage on STR checks and saves; resistance to bludgeoning, piercing and slashing. Bonus damage: +2 (levels 1–8), +3 (9–15), +4 (16+) — edit the effect when it goes up. Switch off when rage ends.',effects:[{target:'dmg',value:2}]},note:'Bonus action. Turns on Raging (Feats tab)'}),
+  P('Reckless Attack','attack','',0,{adv:true,note:'Attacks against you have advantage until your next turn'})]},
+ {g:'Fighter',items:[
+  P('Second Wind','self','sw',1,{dmg:'1d10+level',rollLabel:'HP regained',note:'Bonus action'}),
+  P('Action Surge','self','as',1,{note:'One extra action this turn'})]},
+ {g:'Rogue',items:[
+  P('Sneak Attack','attack','',0,{dmg:'sneak',note:'Once per turn; needs advantage or an ally next to the target; finesse or ranged weapon'}),
+  P('Steady Aim','attack','',0,{src:'TCE',adv:true,note:'Bonus action; you haven\'t moved and your speed becomes 0'})]},
+ {g:'Paladin',items:[
+  P('Divine Smite','attack','','slot',{dmg:'{min(slot+1,5)}d8',note:'Radiant. +1d8 vs undead or fiends. Uses your lowest open slot'}),
+  P('Harness Divine Power','self','cd',1,{src:'TCE',note:'Bonus action: regain a slot up to half your proficiency bonus (round up)'})]},
+ {g:'Cleric',items:[
+  P('Turn Undead','self','cd',1,{save:'wis',dc:'spell',note:'Undead within 30 ft that fail are turned for 1 minute'}),
+  P('Harness Divine Power','self','cd',1,{src:'TCE',note:'Bonus action: regain a slot up to half your proficiency bonus (round up)'})]},
+ {g:'Bard',items:[
+  P('Bardic Inspiration','self','bi',1,{note:'Bonus action: one creature within 60 ft gets an inspiration die'}),
+  P('Cutting Words','self','bi',1,{dmg:'die',rollLabel:'Subtracted from the enemy\'s roll',note:'Reaction (College of Lore)'})]},
+ {g:'Druid',items:[
+  P('Wild Shape','self','wild',1,{note:'Action: beast form for hours equal to half your druid level'}),
+  P('Wild Companion','self','wild',1,{src:'TCE',note:'Action: cast find familiar without components'})]},
+ {g:'Ranger',items:[
+  P('Favored Foe','attack','ff',1,{src:'TCE',dmg:'die',note:'Mark on a hit (concentration); extra damage once per turn. Die: d4, d6 at 6th, d8 at 14th'})]},
+ {g:'Artificer',items:[
+  P('Flash of Genius','self','fog',1,{src:'TCE',dmg:'int',rollLabel:'Added to the check or save',note:'Reaction: a creature within 30 ft'})]},
+ {g:'Channel Divinity (domains & oaths)',items:[
+  P('Guided Strike (War)','attack','cd',1,{hit:'10',note:'+10 to the attack roll'}),
+  P('Destructive Wrath (Tempest)','self','cd',1,{note:'Lightning or thunder damage roll is maximised'}),
+  P('Preserve Life (Life)','self','cd',1,{dmg:'5*level',rollLabel:'HP to share out',note:'Split among creatures within 30 ft, up to half their max HP'}),
+  P('Radiance of the Dawn (Light)','self','cd',1,{dmg:'2d10+level',rollLabel:'radiant (half on a save)',save:'con',dc:'spell',note:'Hostile creatures within 30 ft'}),
+  P('Sacred Weapon (Devotion)','self','cd',1,{feat:{name:'Sacred Weapon',text:'Add CHA mod to weapon attack rolls for 1 minute; weapon sheds light. Switch off when it ends.',effects:[{target:'atk',value:'cha'}]},note:'Action. Turns on Sacred Weapon (Feats tab)'}),
+  P('Vow of Enmity (Vengeance)','self','cd',1,{note:'Bonus action: advantage on attacks vs one creature for 1 minute'}),
+  P("Nature's Wrath (Ancients)",'self','cd',1,{save:'str',dc:'spell',note:'STR or DEX save (its choice) or restrained'}),
+  P('Conquering Presence (Conquest)','self','cd',1,{src:'XGE',save:'wis',dc:'spell',note:'Creatures of your choice within 30 ft: frightened for 1 minute'}),
+  P('Twilight Sanctuary (Twilight)','self','cd',1,{src:'TCE',dmg:'1d6+level',rollLabel:'Temp HP (end of each turn)',note:'30 ft sphere for 1 minute'})]},
+ {g:'Arcane Shots (Arcane Archer)',items:[
+  P('Banishing Arrow','attack','shot',1,{src:'XGE',save:'cha',dc:'calc',dcStat:'int',note:'Banished to the Feywild until end of its next turn'}),
+  P('Beguiling Arrow','attack','shot',1,{src:'XGE',dmg:'{2+2*(level>=18)}d6',save:'wis',dc:'calc',dcStat:'int',note:'Psychic. Charmed by an ally of your choice until start of your next turn'}),
+  P('Bursting Arrow','attack','shot',1,{src:'XGE',dmg:'{2+2*(level>=18)}d6',note:'Force, to the target and everything within 10 ft'}),
+  P('Enfeebling Arrow','attack','shot',1,{src:'XGE',dmg:'{2+2*(level>=18)}d6',save:'con',dc:'calc',dcStat:'int',note:'Necrotic. Its weapon damage is halved until start of your next turn'}),
+  P('Grasping Arrow','attack','shot',1,{src:'XGE',dmg:'{2+2*(level>=18)}d6',note:'Poison. Speed −10 ft and slashing damage when it moves, for 1 minute'}),
+  P('Shadow Arrow','attack','shot',1,{src:'XGE',dmg:'{2+2*(level>=18)}d6',save:'wis',dc:'calc',dcStat:'int',note:'Psychic. Can\'t see beyond 5 ft until start of your next turn'}),
+  P('Piercing Arrow','self','shot',1,{src:'XGE',dmg:'{1+(level>=18)}d6',rollLabel:'Extra piercing (add weapon damage)',save:'dex',dc:'calc',dcStat:'int',note:'30 ft line through creatures; half on a save'}),
+  P('Seeking Arrow','self','shot',1,{src:'XGE',dmg:'{1+(level>=18)}d6',rollLabel:'Extra force (add weapon damage)',save:'dex',dc:'calc',dcStat:'int',note:'Ignores cover; half on a save'})]},
+ {g:'Fighter subclasses',items:[
+  P('Fighting Spirit (Samurai)','self','fspirit',1,{src:'XGE',dmg:'{5*(1+(level>=10)+(level>=15))}',rollLabel:'Temp HP',note:'Bonus action: advantage on weapon attacks this turn'}),
+  P('Psionic Strike (Psi Warrior)','attack','psi',1,{src:'TCE',dmg:'die+int',note:'Force; once per turn on a hit within 30 ft'}),
+  P('Protective Field (Psi Warrior)','self','psi',1,{src:'TCE',dmg:'die+int',rollLabel:'Damage reduced',note:'Reaction'}),
+  P("Giant's Might (Rune Knight)",'self','giant',1,{src:'TCE',feat:{name:"Giant's Might",text:'Large size, advantage on STR checks and saves, extra damage once per turn. Lasts 1 minute.',effects:[{target:'dmg',value:'1d6'}]},note:'Bonus action. Turns on Giant\'s Might (Feats tab)'}),
+  P('Unleash Incarnation (Echo Knight)','self','echo',1,{src:'EGW',note:'Extra melee attack from your echo'})]},
+ {g:'Barbarian subclasses',items:[
+  P('Divine Fury (Zealot)','attack','',0,{src:'XGE',dmg:'1d6+{floor(level/2)}',note:'Necrotic or radiant; first hit each turn while raging'})]},
+ {g:'Ranger subclasses',items:[
+  P('Dread Ambusher (Gloom Stalker)','attack','',0,{src:'XGE',dmg:'1d8',note:'First turn of combat, one extra attack deals this'}),
+  P('Planar Warrior (Horizon Walker)','attack','',0,{src:'XGE',dmg:'{1+(level>=11)}d8',note:'Force; once per turn on the marked target'}),
+  P("Slayer's Prey (Monster Slayer)",'attack','',0,{src:'XGE',dmg:'1d6',note:'Once per turn vs the marked target'}),
+  P('Dreadful Strikes (Fey Wanderer)','attack','',0,{src:'TCE',dmg:'{1+(level>=11)}d4',note:'Psychic; once per turn per creature'}),
+  P('Gathered Swarm (Swarmkeeper)','attack','',0,{src:'TCE',dmg:'{1+(level>=11)}d6',note:'Piercing, or move it/you instead; once per turn'})]},
+ {g:'Bard subclasses',items:[
+  P('Defensive Flourish (Swords)','attack','bi',1,{src:'XGE',dmg:'die',note:'Add the same roll to your AC until your next turn'}),
+  P('Slashing Flourish (Swords)','attack','bi',1,{src:'XGE',dmg:'die',note:'Same damage to another creature within 5 ft'}),
+  P('Mobile Flourish (Swords)','attack','bi',1,{src:'XGE',dmg:'die',note:'Push the target 5 ft + the roll'}),
+  P('Psychic Blades (Whispers)','attack','bi',1,{src:'XGE',dmg:'{2+(level>=5)+2*(level>=10)+3*(level>=15)}d6',note:'Psychic; once per turn'}),
+  P('Unsettling Words (Eloquence)','self','bi',1,{src:'TCE',dmg:'die',rollLabel:'Subtracted from its next save',note:'Bonus action'})]},
+ {g:'Other subclasses',items:[
+  P('Favored by the Gods (Divine Soul)','self','fbg',1,{src:'XGE',dmg:'2d4',rollLabel:'Added to a failed save or missed attack'}),
+  P("Hexblade's Curse (Warlock)",'self','hex',1,{src:'XGE',feat:{name:"Hexblade's Curse",text:'Cursed target only: + proficiency to damage, crit on 19–20, heal when it dies. Switch off when it ends.',effects:[{target:'dmg',value:'prof'}]},note:'Bonus action. Turns on Hexblade\'s Curse (Feats tab)'}),
+  P('Halo of Spores (Spores)','self','',0,{src:'XGE',dmg:'1d{4+2*(level>=6)+2*(level>=10)+2*(level>=14)}',rollLabel:'necrotic',save:'con',dc:'spell',note:'Reaction, creature within 10 ft'}),
+  P('Emboldening Bond (Peace)','self','bond',1,{src:'TCE',dmg:'1d4',rollLabel:'Added to an attack, check or save'}),
+  P('Arcane Ward (Abjuration)','self','ward',0,{note:'Absorbs damage first. Spend points with − on Play; abjuration spells restore 2× the slot level with +'}),
+  P('Arcane Jolt (Battle Smith)','attack','jolt',1,{src:'TCE',dmg:'{2+2*(level>=15)}d6',note:'Force, or heal a creature that much instead'}),
+  P('Bladesong (Bladesinger)','self','bsong',1,{src:'TCE',feat:{name:'Bladesong',text:'+INT to AC and concentration saves, +10 ft speed, advantage on Acrobatics. 1 minute.',effects:[{target:'ac',value:'int'},{target:'speed',value:10}]},note:'Bonus action. Turns on Bladesong (Feats tab)'}),
+  P('Breath of the Dragon (Ascendant Dragon)','self','breath',1,{src:'FTD',dmg:'martial+martial',rollLabel:'damage (half on a save)',save:'dex',dc:'calc',dcStat:'wis',note:'20 ft cone or 30 ft line; costs 2 ki once free uses run out'})]},
+ {g:'Weapon Mastery (2024)',items:[
+  P('Cleave','attack','',0,{src:'P24',note:'Hit: attack a 2nd creature within 5 ft (no ability mod to damage). Once per turn'}),
+  P('Graze','attack','',0,{src:'P24',note:'Miss: still deal damage equal to the ability mod'}),
+  P('Nick','attack','',0,{src:'P24',note:'Light-weapon extra attack is part of the Attack action'}),
+  P('Push','attack','',0,{src:'P24',note:'Hit: push Large or smaller 10 ft straight away'}),
+  P('Sap','attack','',0,{src:'P24',note:'Hit: disadvantage on its next attack before your next turn'}),
+  P('Slow','attack','',0,{src:'P24',note:'Hit and damage: speed −10 ft until your next turn'}),
+  P('Topple','attack','',0,{src:'P24',save:'con',dc:'calc',dcStat:'str',note:'Hit: prone on a failed save (DC uses the attack\'s ability)'}),
+  P('Vex','attack','',0,{src:'P24',note:'Hit and damage: advantage on your next attack on it'})]}
+
+];
+if(EDITION==='store'){ // free-rules (SRD 5.1/5.2) content only in the public edition
+  const NON_SRD_GROUPS=['Maneuvers (Battle Master)'];
+  const NON_SRD_NAMES=['Guided Strike (War)','Destructive Wrath (Tempest)','Radiance of the Dawn (Light)','Vow of Enmity (Vengeance)',"Nature's Wrath (Ancients)",'Arcane Ward (Abjuration)'];
+  for(let i=LIB.length-1;i>=0;i--){ const G=LIB[i]; G.items=G.items.filter(it=>!['XGE','TCE','FTD','EGW','SCAG'].includes(it.src)&&!NON_SRD_GROUPS.includes(G.g)&&!NON_SRD_NAMES.includes(it.name)); if(!G.items.length) LIB.splice(i,1); }
+  Object.keys(BOOKS).forEach(k=>{ if(!LIB.some(G=>G.items.some(it=>(it.src||'PHB')===k))) delete BOOKS[k]; });
+  BOOKS.PHB='Free rules (SRD 5.1)'; if(BOOKS.P24) BOOKS.P24='Free rules (SRD 5.2)';
+}
+let libCreated=[];
+function addLib(st,it,g){
+  let res='';
+  if(it.cost==='slot') res='slot';
+  else if(it.r){ const d=LR[it.r]; let r=st.resources.find(x=>(x.name||'').toLowerCase()===d[0].toLowerCase());
+    if(!r){ r={id:uid(),name:d[0],max:d[1],cur:d[1],reset:d[2],die:d[3]}; st.resources.push(r); libCreated.push(d[0]); } res=r.id; }
+  let feat=''; if(it.feat){ let f=st.features.find(x=>x.name===it.feat.name); if(!f){ f=Object.assign({id:uid(),active:false},JSON.parse(JSON.stringify(it.feat))); st.features.push(f); } feat=f.id; }
+  st.powers.push(Object.assign({},POWER_DEF,{id:uid(),name:it.name,group:g,attach:it.attach,res,
+    costType:(it.cost==='level'||it.cost==='levelMin1')?it.cost:'fixed',cost:typeof it.cost==='number'?it.cost:0,
+    dmg:it.dmg||'',rollLabel:it.rollLabel||'',hit:it.hit||'',adv:!!it.adv,save:it.save||'',dcType:it.dc||'spell',dcStat:it.dcStat||'str',feat,
+    note:(it.src&&BOOKS[it.src]?'('+BOOKS[it.src]+') ':'')+(it.note||'')}));
+}
+const LS = 'livingsheet5e:v1';
+const uid = ()=>Math.random().toString(36).slice(2,9);
+
+function blank(){
+  const slots={}; for(let i=1;i<=9;i++) slots[i]={max:0,used:0};
+  return {v:1,ts:0,name:'New Character',cls:'',level:0,ac:10,hpMax:10,hp:10,temp:0,speed:30,prof:2,initBonus:0,
+    abilities:{str:10,dex:10,con:10,int:10,wis:10,cha:10},saveProf:{},skills:{},castAbility:'none',slots,pactShortRest:false,pact:{level:0,max:0,used:0},classes:[],hdUsed:{},hdFullRest:false,
+    resources:[],attacks:[],spells:[],features:[],notes:'',
+    currency:[['CP',0],['SP',0],['EP',0],['GP',0],['PP',0]].map(c=>({id:uid(),name:c[0],amt:c[1]})),items:[],portrait:'',bio:{},powers:[]};
+}
+const SPELL_DEF={level:1,mode:'none',saveStat:'dex',dmg:'',dmgType:'',upDice:'',cantripScale:false,halfOnSave:false,addMod:false,notes:'',prep:'prepared',source:'',ability:'default',free:0,freeUsed:0};
+const PREP=[['prepared','Prepared'],['always','Always prepared'],['known','Known'],['unprepared','Not prepared']];
+function example(){
+  const s=blank();
+  Object.assign(s,{name:'Ember Vale',cls:'Sorcerer (Draconic)',level:5,classes:[{id:uid(),name:'Sorcerer',sub:'Draconic',level:5,hd:'d6',cast:'full'}],ac:15,hpMax:32,hp:32,speed:30,prof:3,
+    abilities:{str:8,dex:14,con:14,int:10,wis:12,cha:18},saveProf:{con:true,cha:true},skills:{Arcana:1,Persuasion:1,Insight:1},castAbility:'cha'});
+  s.slots[1].max=4; s.slots[2].max=3; s.slots[3].max=2;
+  s.resources=[{id:uid(),name:'Sorcery Points',max:5,cur:5,reset:'long',die:''}];
+  s.attacks=[{id:uid(),name:'Dagger',ability:'dex',prof:true,bonus:0,dmg:'1d4',dmgType:'piercing',addMod:true,notes:'Finesse, thrown 20/60'}];
+  s.spells=[
+    {id:uid(),name:'Fire Bolt',level:0,mode:'attack',saveStat:'dex',dmg:'1d10',dmgType:'fire',upDice:'',cantripScale:true,halfOnSave:false,addMod:false,notes:'120 ft'},
+    {id:uid(),name:'Magic Missile',level:1,mode:'none',saveStat:'dex',dmg:'3d4+3',dmgType:'force',upDice:'1d4+1',cantripScale:false,halfOnSave:false,addMod:false,notes:'Auto-hit. 3 darts, +1 dart per level above 1st'},
+    {id:uid(),name:'Shield',level:1,mode:'none',saveStat:'dex',dmg:'',dmgType:'',upDice:'',cantripScale:false,halfOnSave:false,addMod:false,notes:'Reaction: +5 AC until start of your next turn'},
+    {id:uid(),name:'Scorching Ray',level:2,mode:'attack',saveStat:'dex',dmg:'2d6',dmgType:'fire',upDice:'',cantripScale:false,halfOnSave:false,addMod:false,notes:'3 rays, +1 ray per level above 2nd. Roll per ray.'},
+    {id:uid(),name:'Fireball',level:3,mode:'save',saveStat:'dex',dmg:'8d6',dmgType:'fire',upDice:'1d6',cantripScale:false,halfOnSave:true,addMod:false,notes:'20 ft radius, 150 ft range'},
+    {id:uid(),name:'Misty Step',level:2,mode:'none',prep:'always',source:'Fey blessing (DM)',free:1,notes:'Bonus action: teleport 30 ft'}
+  ];
+  s.spells.forEach(sp=>{ for(const k in SPELL_DEF) if(sp[k]===undefined) sp[k]=SPELL_DEF[k]; if(sp.prep!=='always') sp.prep='known'; });
+  LIB[0].items.forEach(it=>addLib(s,it,'Metamagic')); libCreated=[];
+  s.currency.find(c=>c.name==='GP').amt=47; s.currency.find(c=>c.name==='SP').amt=12;
+  s.items=[{id:uid(),name:'Explorer\'s pack',qty:1,notes:''},{id:uid(),name:'Healing potion',qty:2,notes:'2d4+2'},{id:uid(),name:'Rations',qty:5,notes:''}];
+  s.bio={race:'Dragonborn',background:'Sage',alignment:'Chaotic Good',age:'24',height:'6\'1"',eyes:'Amber',backstory:'Raised by a reclusive scholar of draconic lineages.'};
+  s.features=[
+    {id:uid(),name:'Ring of Embers (homebrew)',active:true,text:'From the DM. While worn: +2 spell save DC.',effects:[{target:'spellDC',value:2}]},
+    {id:uid(),name:'Font of Magic',active:true,text:'Convert sorcery points to slots and back as a bonus action.',effects:[]},
+    {id:uid(),name:'Draconic Resilience',active:true,text:'Unarmoured AC 13 + DEX. +1 HP per sorcerer level.',effects:[]}
+  ];
+  return s;
+}
+function normalize(s){
+  const b=blank(); s=Object.assign(b,s||{});
+  for(let i=1;i<=9;i++) s.slots[i]=Object.assign({max:0,used:0},s.slots[i]||{});
+  s.pact=Object.assign({level:0,max:0,used:0},s.pact||{});
+  if(!s.hdUsed||typeof s.hdUsed!=='object') s.hdUsed={};
+  if(!Array.isArray(s.classes)) s.classes=[];
+  if(!s.classes.length&&String(s.cls||'').trim()){ const raw=String(s.cls||'').trim(); const m=raw.match(/^([A-Za-z' ]+?)\s*(?:\((.*)\))?$/); const nm=m?m[1].trim():raw; const k=Object.keys(CLASSES).find(c=>c.toLowerCase()===nm.toLowerCase());
+    s.classes=[{id:uid(),name:k||nm||'Adventurer',sub:m&&m[2]?m[2]:'',level:Number(s.level)||1,hd:k?CLASSES[k][0]:'d8',cast:k?CLASSES[k][1]:(s.castAbility&&s.castAbility!=='none'?'full':'none')}]; }
+  s.classes.forEach(c=>{ if(!c.id) c.id=uid(); });
+  s.level=s.classes.reduce((a,c)=>a+(Number(c.level)||0),0);
+  ['resources','attacks','spells','features'].forEach(k=>{ if(!Array.isArray(s[k])) s[k]=[]; s[k].forEach(x=>{ if(!x.id) x.id=uid(); }); });
+  s.features.forEach(f=>{ if(!Array.isArray(f.effects)) f.effects=[]; if(f.active===undefined) f.active=true; });
+  (s.attacks||[]).forEach(w=>{ if(!Array.isArray(w.extra)) w.extra=[];
+    if(String(w.dmg||'').includes(',')&&!w.extra.length){ const ds=String(w.dmg).split(',').map(x=>x.trim()).filter(Boolean); const ts=String(w.dmgType||'').split(',').map(x=>x.trim());
+      w.dmg=ds[0]||''; w.dmgType=ts[0]||''; ds.slice(1).forEach((dd,k)=>w.extra.push({dmg:dd,type:ts[k+1]||''})); } });
+  s.spells.forEach(sp=>{ for(const k in SPELL_DEF) if(sp[k]===undefined) sp[k]=SPELL_DEF[k]; });
+  if(Array.isArray(s.meta)&&s.meta.length&&!(Array.isArray(s.powers)&&s.powers.length)) s.powers=s.meta.map(m=>Object.assign({},POWER_DEF,m,{group:s.metaLabel||'Metamagic',attach:'spell'}));
+  delete s.meta; delete s.metaLabel;
+  if(!Array.isArray(s.powers)) s.powers=[]; s.powers.forEach(p=>{ for(const k in POWER_DEF) if(p[k]===undefined) p[k]=POWER_DEF[k]; });
+  ['currency','items','powers'].forEach(k=>{ if(!Array.isArray(s[k])) s[k]=[]; s[k].forEach(x=>{ if(!x.id) x.id=uid(); }); });
+  if(!s.bio||typeof s.bio!=='object') s.bio={};
+  const hi=s.resources.findIndex(r=>/^hit dice$/i.test(String(r.name||'').trim()));
+  if(hi>=0){ const r=s.resources[hi]; const die=(s.classes[0]&&s.classes[0].hd)||'d8'; s.hdUsed[die]=Math.max(0,(Number(r.max)||0)-(Number(r.cur)||0)); s.resources.splice(hi,1); }
+  return s;
+}
+
+/* ---------- load ---------- */
+let embedded=null; try{ embedded=JSON.parse(document.getElementById('saved').textContent); }catch(e){}
+let local=null; try{ local=JSON.parse(localStorage.getItem(LS)); }catch(e){}
+function toStore(x){ if(!x||typeof x!=='object') return null; if(Array.isArray(x.chars)) return x; if(x.abilities) return {v:2,ts:x.ts||0,cur:x.cid||'',chars:[x]}; return null; }
+embedded=toStore(embedded); local=toStore(local);
+const embTs = embedded ? (embedded.ts||0) : -1;
+let STORE = (local && (!embedded || (local.ts||0) > embTs)) ? local : embedded;
+let CHARS = STORE ? STORE.chars.filter(c=>c&&c.abilities).map(c=>{ const n=normalize(c); if(!n.cid) n.cid=uid(); return n; }) : [];
+if(!CHARS.length){ const e=example(); e.cid=uid(); CHARS=[e]; }
+let S = CHARS.find(c=>c.cid===(STORE&&STORE.cur)) || CHARS[0];
+let STORE_TS = STORE ? (STORE.ts||0) : 0;
+let savedTs = embTs;
+const storeJSON=()=>JSON.stringify({v:2,ts:STORE_TS,cur:S.cid,chars:CHARS});
+
+let tab='play'; try{ tab=localStorage.getItem(LS+':tab')||'play'; }catch(e){}
+let adv='n';
+const LOG=[];
+
+const artP = (window.claude && claude.use) ? claude.use('artifact').catch(()=>null) : Promise.resolve(null);
+let CAN_PUBLISH = !!(window.claude && claude.use);
+artP.then(a=>{ if(!a){ CAN_PUBLISH=false; const b=document.getElementById('saveBtn'); if(b) b.remove(); } });
+const dlP  = (window.claude && claude.use) ? claude.use('downloads').catch(()=>null) : Promise.resolve(null);
+
+function touch(){ S.ts=Date.now(); STORE_TS=S.ts; try{ localStorage.setItem(LS,storeJSON()); }catch(e){} updSave(); }
+function updSave(){ const b=document.getElementById('saveBtn'); if(!b) return; const d=STORE_TS>savedTs; b.classList.toggle('dirty',d); b.textContent=d?'Save':'Saved'; }
+
+/* ---------- maths ---------- */
+const mod = sc=>Math.floor((sc-10)/2);
+const sg = n=>(n>=0?'+':'')+n;
+const isDice=v=>/\d*d\d/i.test(String(v||''));
+const CLS_RE=/\b(artificer|barbarian|bard|cleric|druid|fighter|monk|paladin|ranger|rogue|sorcerer|warlock|wizard)\b/gi;
+const clsTok=v=>String(v).replace(CLS_RE,k=>'('+S.classes.filter(c=>(c.name||'').toLowerCase()===k.toLowerCase()).reduce((a,c)=>a+(Number(c.level)||0),0)+')');
+function numVal(e){ const v=String(e.value==null?'':e.value); if(/^\s*[+-]?\d+(\.\d+)?\s*$/.test(v)) return Number(v);
+  if(!v.trim()||e.target==='prof'||String(e.target).startsWith('score:')) return Number(v)||0;
+  return Math.floor(calc(clsTok(v).replace(TOK,k=>{ k=k.toLowerCase(); return '('+(k==='prof'?prof():k==='level'||k==='lvl'?S.level:k==='slot'?0:am(k))+')'; }))); }
+function bonus(t){ let n=0; S.features.forEach(f=>{ if(f.active) f.effects.forEach(e=>{ if(e.target===t&&!isDice(e.value)) n+=numVal(e); }); }); return n; }
+function effs(t,scope){ const o=[]; S.features.forEach(f=>{ if(f.active) f.effects.forEach(e=>{ if(e.target===t&&(!e.scope||e.scope===scope)) o.push({e,f}); }); }); return o; }
+const flatOf=(t,scope)=>effs(t,scope).reduce((n,x)=>n+(isDice(x.e.value)?0:numVal(x.e)),0);
+const diceOf=(t,scope)=>effs(t,scope).filter(x=>isDice(x.e.value));
+const ALL_TYPES='acid, bludgeoning, cold, fire, force, lightning, necrotic, piercing, poison, psychic, radiant, slashing, thunder';
+function typeList(str){ let t=String(str||'').toLowerCase().replace(/\(?\s*random\s*\)?/g,' ').replace(/\belemental\b/g,'acid, cold, fire, lightning, thunder').replace(/\bany\b/g,ALL_TYPES);
+  return t.split(/,|\/|\bor\b/).map(x=>x.trim()).filter(Boolean); }
+function pickType(str){ const a=typeList(str); return a.length?a[d(a.length)-1]:''; }
+const typeShow=str=>{ const a=typeList(str); return a.length>1?'random '+(/elemental/i.test(str)?'elemental':'type'):(a[0]||''); };
+function extraLines(t,scope,crit,fallbackType){ return diceOf(t,scope).map(x=>{ const r=rollExpr(expand(x.e.value,{}),crit,0); const ty=pickType(x.e.dtype)||fallbackType||'damage';
+  return {label:ty+' · '+x.f.name,big:r.total,detail:r.detail+(String(x.e.dtype||'').includes(',')?' — type rolled from: '+x.e.dtype:''),n:r.total}; }); }
+const prof = ()=>S.prof+bonus('prof');
+const score = a=>S.abilities[a]+bonus('score:'+a);
+const am = a=>mod(score(a));
+const saveB = a=>am(a)+(S.saveProf[a]?prof():0)+bonus('allSaves')+bonus('save:'+a);
+const skillLv = n=>S.skills[n]||0;
+const skillB = (n,a)=>am(a)+Math.floor(prof()*skillLv(n))+bonus('allChecks')+bonus('skill:'+n);
+const acV = ()=>S.ac+bonus('ac');
+const hpMaxV = ()=>S.hpMax+bonus('hpMax');
+const initV = ()=>am('dex')+S.initBonus+bonus('init');
+const speedV = ()=>S.speed+bonus('speed');
+const castM = ()=>S.castAbility==='none'?0:am(S.castAbility);
+const dcV = ()=>8+prof()+castM()+bonus('spellDC');
+const satkV = ()=>prof()+castM()+bonus('spellAtk');
+const spM = sp=>(sp.ability&&sp.ability!=='default')?am(sp.ability):castM();
+const dcFor = sp=>8+prof()+spM(sp)+bonus('spellDC');
+const atkFor = sp=>prof()+spM(sp)+bonus('spellAtk');
+const tier = ()=>S.level>=17?4:S.level>=11?3:S.level>=5?2:1;
+const wHit = w=>(w.ability==='none'?0:am(w.ability))+(w.prof?prof():0)+(Number(w.bonus)||0)+flatOf('atk',w.id);
+const wFlat = w=>(w.addMod&&w.ability!=='none'?am(w.ability):0)+flatOf('dmg',w.id);
+
+/* ---------- dice ---------- */
+function d(n){ const a=new Uint32Array(1); crypto.getRandomValues(a); return 1+(a[0]%n); }
+function parse(expr){
+  const out={dice:[],flat:0}; const s=String(expr||'').toLowerCase().replace(/\s+/g,'');
+  const re=/([+-]?)(\d*)d(\d+)|([+-]?)(\d+)/g; let m;
+  while((m=re.exec(s))){ if(m[3]){ out.dice.push({n:Number(m[2]||1),s:Number(m[3]),sign:m[1]==='-'?-1:1}); } else if(m[5]){ out.flat+=(m[4]==='-'?-1:1)*Number(m[5]); } }
+  return out;
+}
+function scale(expr,k,flats){
+  const p=parse(expr); if(!p.dice.length&&!p.flat) return '';
+  const parts=p.dice.map(x=>(x.sign<0?'-':'')+(x.n*k)+'d'+x.s);
+  const f=flats?p.flat*k:p.flat; if(f) parts.push(String(f));
+  return parts.join('+').replace(/\+-/g,'-');
+}
+function rollExpr(expr,crit,extra){
+  const p=parse(expr); let total=0; const bits=[];
+  p.dice.forEach(x=>{ const n=crit?x.n*2:x.n; const r=[]; for(let i=0;i<n;i++) r.push(d(x.s)); const sum=r.reduce((a,b)=>a+b,0)*x.sign; total+=sum; bits.push((x.sign<0?'-':'')+n+'d'+x.s+' ['+r.join(',')+']'); });
+  const flat=p.flat+(extra||0); if(flat){ total+=flat; bits.push(sg(flat)); }
+  return {total:Math.max(0,total),detail:bits.join(' ')};
+}
+function d20(b){
+  const roll=()=>{ const r=d(20); if(r===1&&S.lucky){ const n=d(20); return {v:n,t:'1→'+n+' lucky'}; } return {v:r,t:String(r)}; };
+  const A=roll(); const a=A.v; let nat=a, txt;
+  if(adv!=='n'){ const C=roll(), c=C.v; nat=adv==='a'?Math.max(a,c):Math.min(a,c); txt=(adv==='a'?'Adv ':'Dis ')+'['+A.t+', '+C.t+'] '+sg(b); }
+  else txt='d20 ['+A.t+'] '+sg(b);
+  return {nat,total:nat+b,txt};
+}
+function clearAdv(){ if(adv!=='n'){ adv='n'; document.querySelectorAll('.adv button').forEach(x=>x.classList.toggle('on',x.dataset.v==='n')); } }
+
+/* ---------- output ---------- */
+const esc = s=>String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const sheet=document.getElementById('sheet');
+function openSheet(html){ sheet.innerHTML='<div class="box">'+html+'</div>'; sheet.classList.add('show'); }
+function closeSheet(){ sheet.classList.remove('show'); sheet.innerHTML=''; }
+sheet.addEventListener('click',e=>{ if(e.target===sheet) closeSheet(); });
+sheet.addEventListener('change',e=>{ const id=e.target.id; if(!LU) return;
+  if(id==='luNew'){ luRead(); LU.hd=null; LU.cast=null; LU.hp=null; drawLevelUp(); }
+  else if(id==='luHd'){ LU.hd=e.target.value; LU.hp=null; luRead0(); drawLevelUp(); }
+  else if(id==='luCast'){ LU.cast=e.target.value; luRead0(); drawLevelUp(); }
+  else if(id==='luHp'){ LU.hp=Number(e.target.value)||0; } });
+function luRead0(){ const c=document.getElementById('luCustom'); if(c) LU.customName=c.value; }
+function showResult(title,lines,foot,fromDice){
+  const t=new Date().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'});
+  LOG.unshift({title,lines,foot,t}); if(LOG.length>60) LOG.pop();
+  openSheet('<h3>'+esc(title)+'</h3>'+lines.map(l=>'<div class="rl '+(l.cls||'')+'"><div class="lab">'+esc(l.label)+'<div class="det">'+esc(l.detail||'')+'</div></div><div class="val">'+esc(l.big)+'</div></div>').join('')+
+    (foot?'<div class="note">'+esc(foot)+'</div>':'')+(fromDice?'<div class="grid g2" style="margin-top:12px"><button class="btn pri" data-act="dice">Back to dice</button><button class="btn" data-act="close">Close</button></div>':'<button class="btn" style="width:100%;margin-top:12px" data-act="close">Close</button>'));
+  clearAdv();
+  if(tab==='log') render();
+}
+function check(label,b){ const r=d20(b); showResult(label,[{label:'Total',big:r.total,detail:r.txt,cls:r.nat===20?'crit':r.nat===1?'fumble':''}]); }
+let toastT; function toast(m){ const el=document.getElementById('toast'); el.textContent=m; el.style.display='block'; clearTimeout(toastT); toastT=setTimeout(()=>el.style.display='none',3200); }
+
+/* ---------- actions ---------- */
+/* ---------- powers engine ---------- */
+function calc(src){
+  const t=String(src).match(/\d+(?:\.\d+)?|[a-z]+|>=|<=|==|[-+*/(),<>]/gi)||[]; let i=0;
+  const peek=()=>t[i], next=()=>t[i++];
+  const F={ceil:Math.ceil,floor:Math.floor,min:Math.min,max:Math.max,round:Math.round};
+  function prim(){ const x=next(); if(x===undefined) return 0;
+    if(x==='('){ const v=cmp(); next(); return v; } if(x==='-') return -prim(); if(x==='+') return prim();
+    if(/^[a-z]+$/i.test(x)){ next(); const a=[cmp()]; while(peek()===','){ next(); a.push(cmp()); } next(); const f=F[x.toLowerCase()]; return f?f(...a):0; }
+    return Number(x)||0; }
+  function mul(){ let v=prim(); while(peek()==='*'||peek()==='/'){ const o=next(); const r=prim(); v=o==='*'?v*r:(r?v/r:0); } return v; }
+  function add(){ let v=mul(); while(peek()==='+'||peek()==='-'){ const o=next(); const r=mul(); v=o==='+'?v+r:v-r; } return v; }
+  function cmp(){ let v=add(); while(['>','<','>=','<=','=='].includes(peek())){ const o=next(); const r=add(); v=(o==='>'?v>r:o==='<'?v<r:o==='>='?v>=r:o==='<='?v<=r:v===r)?1:0; } return v; }
+  try{ const v=cmp(); return isFinite(v)?v:0; }catch(e){ return 0; }
+}
+function martialDie(){ return S.level>=17?'1d10':S.level>=11?'1d8':S.level>=5?'1d6':'1d4'; }
+const TOK=/\b(prof|level|lvl|slot|str|dex|con|int|wis|cha)\b/gi;
+function expand(expr,ctx){
+  let s=String(expr||''); if(!s.trim()) return '';
+  const num={prof:prof(),level:S.level,lvl:S.level,slot:(ctx&&ctx.slot)||0}; ABIL.forEach(a=>num[a]=am(a));
+  s=s.replace(/\{([^}]*)\}/g,(m,inner)=>String(Math.floor(calc(clsTok(inner).replace(TOK,k=>'('+num[k.toLowerCase()]+')')))));
+  s=s.replace(/\bdie\b/gi,(ctx&&ctx.die)||'1d6').replace(/\bmartial\b/gi,martialDie()).replace(/\bsneak\b/gi,Math.ceil(S.level/2)+'d6');
+  s=s.replace(TOK,k=>String(num[k.toLowerCase()]));
+  return s.replace(/\s+/g,'').replace(/\+-/g,'-').replace(/--/g,'+');
+}
+function pCost(p,lv){ return p.costType==='level'?lv:p.costType==='levelMin1'?Math.max(1,lv):(Number(p.cost)||0); }
+function pCostLabel(p){ if(p.res==='slot') return 'spell slot'; const r=S.resources.find(x=>x.id===p.res); if(!p.res||!r) return 'no cost';
+  const c=p.costType==='fixed'?String(Number(p.cost)||0):p.costType==='level'?'spell level':'spell level (min 1)'; return c+' '+r.name; }
+function pDC(p){ return p.dcType==='spell'?dcV():p.dcType==='fixed'?(Number(p.dcFixed)||10):8+prof()+am(p.dcStat||'str'); }
+function lowestSlot(){ for(let L=1;L<=9;L++){ const s=S.slots[L]; if(s.max-s.used>0) return L; } return 0; }
+function usePowers(ids,lv){
+  const ps=ids.map(i=>S.powers.find(p=>p.id===i)).filter(Boolean);
+  const need={}; let slotNeed=false;
+  for(const p of ps){ if(p.res==='slot') slotNeed=true; else if(p.res){ need[p.res]=(need[p.res]||0)+pCost(p,lv); } }
+  for(const id in need){ const r=S.resources.find(x=>x.id===id);
+    if(!r){ toast('An option points at a resource that was deleted — fix it in Setup'); return null; }
+    if(r.cur<need[id]){ toast('Not enough '+r.name+' (need '+need[id]+', have '+r.cur+')'); return null; } }
+  let slotL=0; if(slotNeed){ slotL=lowestSlot(); if(!slotL){ toast('No spell slots left'); return null; } }
+  for(const id in need) S.resources.find(x=>x.id===id).cur-=need[id];
+  if(slotL) S.slots[slotL].used++;
+  const out={dmg:[],hit:[],adv:false,lines:[],notes:[],left:[]};
+  ps.forEach(p=>{
+    const r=S.resources.find(x=>x.id===p.res); const ctx={die:(r&&r.die)||'1d6',slot:slotL};
+    if(p.dmg){ const e=expand(p.dmg,ctx); if(e) out.dmg.push({e,label:p.rollLabel||p.name}); }
+    if(p.hit){ const e=expand(p.hit,ctx); if(e) out.hit.push(e); }
+    if(p.adv) out.adv=true;
+    if(p.save) out.lines.push({label:p.name+': '+ABN[p.save]+' save',big:'DC '+pDC(p),detail:''});
+    if(p.feat){ const f=S.features.find(x=>x.id===p.feat); if(f) f.active=true; }
+    const cost=p.res==='slot'?'level '+slotL+' slot':r?'−'+pCost(p,lv)+' '+r.name:'';
+    out.notes.push('• '+p.name+(cost?' ('+cost+')':'')+(p.note?': '+p.note:''));
+  });
+  for(const id in need){ const r=S.resources.find(x=>x.id===id); out.left.push(r.name+' left: '+r.cur+'/'+r.max); }
+  if(slotL) out.left.push('Level '+slotL+' slots left: '+(S.slots[slotL].max-S.slots[slotL].used));
+  if(ps.length) touch();
+  return out;
+}
+let pickSel=new Set();
+function chips(ps,kind,owner){
+  const groups={}; ps.forEach(p=>{ (groups[p.group||'Options']=groups[p.group||'Options']||[]).push(p); });
+  let h=''; Object.keys(groups).forEach(g=>{ h+='<div class="lvhead">'+esc(g)+'</div><div class="chips">'+groups[g].map(p=>'<button class="chip '+(pickSel.has(p.id)?'on':'')+'" data-act="pk" data-id="'+p.id+'" data-k="'+kind+'" data-o="'+owner+'">'+esc(p.name)+'<small>'+esc(pCostLabel(p))+'</small></button>').join('')+'</div>'; });
+  const rs=[...new Set(ps.map(p=>p.res).filter(x=>x&&x!=='slot'))].map(id=>S.resources.find(r=>r.id===id)).filter(Boolean);
+  if(rs.length) h+='<div class="hint">'+rs.map(r=>esc(r.name)+': '+r.cur+'/'+r.max).join(' · ')+'</div>';
+  return h;
+}
+function attackPick(w){
+  const ps=S.powers.filter(p=>p.attach==='attack'); if(!ps.length){ attack(w,[]); return; }
+  pickSel=new Set(); drawAtk(w);
+}
+function drawAtk(w){
+  openSheet('<h3>'+esc(w.name)+'</h3><div class="sub">Add to this attack (optional)</div>'+chips(S.powers.filter(p=>p.attach==='attack'),'w',w.id)+
+    '<button class="btn pri" style="width:100%;margin-top:12px" data-act="atkGo" data-id="'+w.id+'">Attack '+sg(wHit(w))+'</button>');
+}
+function attack(w,ids){
+  const u=usePowers(ids||[],0); if(!u) return; closeSheet();
+  if(u.adv) adv=adv==='d'?'n':'a';
+  const r=d20(wHit(w)); let total=r.total, txt=r.txt;
+  const hitX=u.hit.concat(diceOf('atk',w.id).map(x=>expand(x.e.value,{})));
+  if(hitX.length){ const h=rollExpr(hitX.join('+'),false,0); total+=h.total; txt+=' + '+h.detail; }
+  const crit=r.nat===20;
+  const wx=(w.extra||[]).filter(x=>x.dmg).map(x=>{ const r=rollExpr(expand(x.dmg,{}),crit,0); const ty=pickType(x.type)||'damage'; return {label:ty,big:r.total,detail:r.detail+(typeList(x.type).length>1?' — type rolled from: '+typeList(x.type).join(', '):''),n:r.total}; });
+  const xl=wx.concat(extraLines('dmg',w.id,crit,w.dmgType)).concat(u.dmg.map(x=>{ const r=rollExpr(x.e,crit,0); return {label:x.label,big:r.total,detail:r.detail,n:r.total}; }));
+  const dm=rollExpr(w.dmg,crit,wFlat(w));
+  const lines=[{label:'To hit',big:total,detail:txt+(crit?' — CRIT':''),cls:crit?'crit':r.nat===1?'fumble':''},
+    {label:(pickType(w.dmgType)||'damage')+(crit?' (crit)':''),big:dm.total,detail:dm.detail}].concat(xl,xl.length?[{label:'Total damage',big:dm.total+xl.reduce((a,x)=>a+x.n,0),detail:'',cls:'crit'}]:[],u.lines);
+  showResult(w.name,lines,[u.notes.join('\n'),u.left.join(' · '),w.notes||''].filter(Boolean).join('\n'));
+  if(tab==='play'||tab==='spells') render();
+}
+function usePower(p){
+  const u=usePowers([p.id],0); if(!u) return;
+  const lines=u.dmg.map(x=>{ const r=rollExpr(x.e,false,0); return {label:x.label,big:r.total,detail:r.detail}; }).concat(u.lines);
+  if(!lines.length) lines.push({label:'Used',big:'✓',detail:''});
+  showResult(p.name,lines,[u.notes.join('\n'),u.left.join(' · ')].filter(Boolean).join('\n'));
+  render();
+}
+function castPick(sp){
+  const ps=S.powers.filter(p=>p.attach==='spell');
+  if(Number(sp.level)===0&&!ps.length){ resolveSpell(sp,0,'none',[]); return; }
+  pickSel=new Set(); drawPick(sp);
+}
+function drawPick(sp){
+  const base=Number(sp.level); const ps=S.powers.filter(p=>p.attach==='spell');
+  let h='<h3>'+esc(sp.name)+'</h3>'+(ps.length?'<div class="sub">Add options (optional)</div>'+chips(ps,'s',sp.id):'');
+  if(base===0){
+    h+='<button class="btn pri" style="width:100%;margin-top:12px" data-act="castAt" data-id="'+sp.id+'" data-l="none">Cast</button>';
+  } else {
+    h+='<div class="sub" style="margin-top:10px">Cast at what level?</div><div class="slotpick">';
+    for(let L=base;L<=9;L++){ const sl=S.slots[L]; if(!sl.max) continue; const av=sl.max-sl.used;
+      h+='<button data-act="castAt" data-id="'+sp.id+'" data-l="'+L+'" '+(av<=0?'disabled style="opacity:.35"':'')+'>Level '+L+'<small>'+av+'/'+sl.max+' left</small></button>'; }
+    h+='</div>';
+    if(S.pact.max&&S.pact.level>=base){ const av=S.pact.max-S.pact.used; h+='<button class="btn" style="width:100%;margin-top:10px;border-color:#8e6cc0" data-act="castAt" data-id="'+sp.id+'" data-l="pact" '+(av<=0?'disabled':'')+'>Pact slot — level '+S.pact.level+' ('+av+'/'+S.pact.max+' left)</button>'; }
+    const fl=(Number(sp.free)||0)-(Number(sp.freeUsed)||0);
+    if(Number(sp.free)>0) h+='<button class="btn pri" style="width:100%;margin-top:10px" data-act="castAt" data-id="'+sp.id+'" data-l="perday" '+(fl<=0?'disabled':'')+'>Free cast — '+fl+'/'+sp.free+' left (long rest)</button>';
+    h+='<button class="btn ghost" style="width:100%;margin-top:10px" data-act="castAt" data-id="'+sp.id+'" data-l="free">Cast without using a slot</button>';
+  }
+  openSheet(h);
+}
+function resolveSpell(sp,L,how,ids){
+  const base=Number(sp.level); const lv=L||base;
+  const u=usePowers(ids||[],lv); if(!u) return;
+  if(how==='slot'){ S.slots[L].used=Math.min(S.slots[L].max,S.slots[L].used+1); }
+  if(how==='pact'){ S.pact.used=Math.min(S.pact.max,S.pact.used+1); }
+  if(how==='perday'){ sp.freeUsed=Math.min(Number(sp.free)||0,(Number(sp.freeUsed)||0)+1); }
+  if(how==='slot'||how==='perday'||how==='pact') touch();
+  closeSheet();
+  const lines=[]; let crit=false;
+  if(sp.mode==='attack'){
+    if(u.adv) adv=adv==='d'?'n':'a';
+    const r=d20(atkFor(sp)); let total=r.total, txt=r.txt; crit=r.nat===20;
+    if(u.hit.length){ const h=rollExpr(u.hit.join('+'),false,0); total+=h.total; txt+=' + '+h.detail; }
+    lines.push({label:'Spell attack',big:total,detail:txt+(crit?' — CRIT':''),cls:crit?'crit':r.nat===1?'fumble':''}); }
+  if(sp.mode==='save') lines.push({label:ABN[sp.saveStat]+' save',big:'DC '+dcFor(sp),detail:sp.halfOnSave?'Half damage on a success':''});
+  let ex=sp.dmg||'';
+  if(ex&&base===0&&sp.cantripScale) ex=scale(sp.dmg,tier(),false);
+  if(ex&&base>0&&lv>base&&sp.upDice) ex+='+'+scale(sp.upDice,lv-base,true);
+  u.dmg.forEach(x=>{ ex+=(ex?'+':'')+x.e; });
+  if(ex){
+    const heal=/heal/i.test(sp.dmgType||'');
+    const r=rollExpr(ex,crit,(sp.addMod?spM(sp):0)+(heal?0:bonus('spellDmg')));
+    lines.push({label:(sp.dmgType||'damage')+(crit?' (crit)':''),big:r.total,detail:r.detail});
+    if(!heal){ const xl=extraLines('spellDmg','',crit,sp.dmgType); lines.push(...xl); if(xl.length) lines.push({label:'Total damage',big:r.total+xl.reduce((a,x)=>a+x.n,0),detail:'',cls:'crit'}); }
+  }
+  lines.push(...u.lines);
+  if(!lines.length) lines.push({label:'Cast',big:'✓',detail:''});
+  let foot='';
+  if(base>0) foot+=(how==='pact'?'Pact slot used ('+(S.pact.max-S.pact.used)+'/'+S.pact.max+' left).':how==='slot'?'Level '+L+' slot used ('+(S.slots[L].max-S.slots[L].used)+' left).':how==='perday'?'Free cast used ('+(sp.free-sp.freeUsed)+'/'+sp.free+' left).':'No slot used.');
+  showResult(sp.name+(base>0?' — level '+lv:''),lines,[foot,u.notes.join('\n'),u.left.join(' · '),sp.notes||''].filter(Boolean).join('\n'));
+  if(tab==='spells'||tab==='play') render();
+}
+function rest(kind){
+  S.resources.forEach(r=>{ if(r.reset==='short'||(kind==='long'&&r.reset==='long')) r.cur=r.max; });
+  if(kind==='long'||S.pactShortRest) for(let i=1;i<=9;i++) S.slots[i].used=0;
+  S.pact.used=0;
+  if(kind==='long'){ S.hp=hpMaxV(); S.temp=0; S.spells.forEach(sp=>sp.freeUsed=0);
+    const pools=hdPools(); let back=S.hdFullRest?Infinity:Math.max(1,Math.floor(totalLevel()/2));
+    pools.forEach(p=>{ const g=Math.min(p.used,back); S.hdUsed[p.die]=p.used-g; back-=g; }); }
+  touch(); render(); toast(kind==='long'?'Long rest: HP, slots and resources restored':'Short rest: short-rest resources restored');
+}
+function hpChange(kind){
+  const v=Math.max(0,Number(document.getElementById('hpAmt').value)||0); if(!v) return;
+  if(kind==='dmg'){ let left=v; const t=Math.min(S.temp,left); S.temp-=t; left-=t; S.hp=Math.max(0,S.hp-left); }
+  else if(kind==='heal'){ S.hp=Math.min(hpMaxV(),S.hp+v); }
+  else if(kind==='temp'){ S.temp=Math.max(S.temp,v); }
+  touch(); render();
+}
+function find(list,id){ return S[list].find(x=>x.id===id); }
+
+/* ---------- save / backup ---------- */
+function buildHTML(){
+  const doc=new DOMParser().parseFromString(SRC,'text/html');
+  [doc.head,doc.body].forEach(p=>[...p.children].forEach(c=>{ if(!c.hasAttribute('data-keep')) c.remove(); }));
+  doc.getElementById('app').innerHTML=''; doc.getElementById('sheet').innerHTML=''; doc.getElementById('toast').textContent='';
+  doc.getElementById('saved').textContent=storeJSON().replace(/</g,'\\u003c');
+  return '<!DOCTYPE html>\n'+doc.documentElement.outerHTML;
+}
+async function saveSheet(){
+  const a=await artP;
+  if(!a){ toast('Saving into the page isn\'t available in this view. Your sheet is still kept on this device — use Export for a backup.'); return; }
+  try{ await a.publish(buildHTML()); savedTs=STORE_TS; updSave(); toast('Saved'); }
+  catch(e){ toast('Couldn\'t save: '+((e&&(e.code||e.message))||'error')+'. Still kept on this device.'); }
+}
+async function exportJSON(ch){ ch=ch||S;
+  const data=JSON.stringify(ch,null,1); const fn=(ch.name||'character').replace(/[^\w-]+/g,'_')+'.json';
+  const dl=await dlP;
+  if(dl){ try{ await dl.save({filename:fn,data}); return; }catch(e){} }
+  if(!window.claude){ try{ const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([data],{type:'application/json'})); a.download=fn; document.body.appendChild(a); a.click(); a.remove(); toast('Backup saved as '+fn); return; }catch(e){} }
+  openSheet('<h3>Backup</h3><div class="sub">Copy this text and keep it somewhere safe. Paste it into Import to restore.</div><textarea id="expTxt" style="min-height:200px;margin-top:8px">'+esc(data)+'</textarea><button class="btn pri" style="width:100%;margin-top:8px" data-act="copyExp">Copy</button>');
+}
+function importText(txt){
+  try{ const o=JSON.parse(txt); const st=toStore(o); if(!st) throw 0; const got=st.chars.filter(c=>c&&c.abilities).map(c=>{ const n=normalize(JSON.parse(JSON.stringify(c))); n.cid=uid(); return n; }); if(!got.length) throw 0;
+    CHARS.push(...got); S=got[0]; touch(); closeSheet(); tab='play'; render(); toast('Imported '+(got.length>1?got.length+' characters':S.name)); }
+  catch(e){ toast('That doesn\'t look like a character backup'); }
+}
+
+/* ---------- render ---------- */
+const app=document.getElementById('app');
+function render(){
+  try{ localStorage.setItem(LS+':tab',tab); }catch(e){}
+  const tabs=[['chars','Chars'],['play','Play'],['spells','Spells'],['features','Feats'],['bag','Bag'],['bio','Bio'],['setup','Setup']];
+  let h='<header class="top"><div class="toprow">'+(S.portrait?'<img class="thumb" src="'+S.portrait+'" alt="" data-act="tab" data-t="bio">':'')+'<div class="who"><h1>'+esc(S.name)+'</h1><div class="sub">'+whoLine()+'</div></div>'+
+    '<button class="btn sm '+(tab==='log'?'pri':'')+'" data-act="tab" data-t="log">Log</button>'+(CAN_PUBLISH?'<button class="btn save" id="saveBtn" data-act="save">Saved</button>':'')+'</div>'+
+    '<div class="tabs">'+tabs.map(t=>'<button data-act="tab" data-t="'+t[0]+'" class="'+(tab===t[0]?'on':'')+'">'+t[1]+'</button>').join('')+'</div>'+
+    (tab==='setup'||tab==='bio'||tab==='bag'||tab==='chars'?'':'<div class="adv"><button data-act="adv" data-v="d" class="d '+(adv==='d'?'on':'')+'">Disadvantage</button><button data-act="adv" data-v="n" class="n '+(adv==='n'?'on':'')+'">Normal</button><button data-act="adv" data-v="a" class="a '+(adv==='a'?'on':'')+'">Advantage</button></div>')+
+    '</header><div class="wrap">';
+  h+= tab==='play'?vPlay(): tab==='spells'?vSpells(): tab==='features'?vFeatures(): tab==='log'?vLog(): tab==='bag'?vBag(): tab==='bio'?vBio(): tab==='chars'?vChars(): vSetup();
+  h+='</div>';
+  h+='<button class="fab" data-act="dice" aria-label="Dice roller">🎲</button>'; app.innerHTML=h; updSave();
+}
+let libSrc='';
+function drawLib(){
+  let h='<h3>Library</h3><div class="sub">Tap + to add one, or add a whole group. Resources it needs are created for you — set their max in Setup.</div>'+
+    '<div class="chips">'+[['','All books']].concat(Object.keys(BOOKS).map(k=>[k,BOOKS[k]])).map(o=>'<button class="chip '+(libSrc===o[0]?'on':'')+'" data-act="libSrc" data-v="'+o[0]+'">'+esc(o[1])+'</button>').join('')+'</div>';
+  const srcOf=it=>it.src||'PHB';
+  LIB.forEach((G,gi)=>{ if(libSrc&&!G.items.some(it=>srcOf(it)===libSrc)) return; h+='<div class="libg"><div class="hd"><b>'+esc(G.g)+'</b><button class="btn sm" data-act="libAll" data-g="'+gi+'">Add all</button></div>'+
+    G.items.map((it,ii)=>{ if(libSrc&&srcOf(it)!==libSrc) return ''; const has=S.powers.some(p=>p.name===it.name&&p.group===G.g); return '<div class="libi"><span><b>'+esc(it.name)+'</b>'+' <span class="tag">'+esc(BOOKS[srcOf(it)])+'</span>'+'<div class="meta">'+esc(it.note||it.rollLabel||'')+'</div></span>'+(has?'<span class="sub">✓</span>':'<button class="btn sm" data-act="libOne" data-g="'+gi+'" data-i="'+ii+'">+</button>')+'</div>'; }).join('')+'</div>'; });
+  h+='<button class="btn" style="width:100%;margin-top:12px" data-act="close">Done</button>';
+  const box=sheet.querySelector('.box'); const y=box?box.scrollTop:0; openSheet(h); const nb=sheet.querySelector('.box'); if(nb) nb.scrollTop=y;
+}
+function libToast(what){ toast('Added '+what+(libCreated.length?'. Created: '+libCreated.join(', ')+' — set the max in Setup':'')); libCreated=[]; }
+function restRow(){ return '<div class="grid g2" style="margin-top:10px"><button class="btn" data-act="rest" data-k="short" data-confirm>☕ Short rest</button><button class="btn" data-act="rest" data-k="long" data-confirm>🌙 Long rest</button></div>'; }
+let dCount=1, dMod=0;
+function drawDice(){
+  const dice=[4,6,8,10,12,20,100];
+  let h='<h3>Dice</h3><div class="grid g2" style="margin-top:6px">'+
+    '<div class="stepper"><span class="sub">How many</span><div><button class="btn sm" data-act="dc" data-d="-1">−</button><b>'+dCount+'</b><button class="btn sm" data-act="dc" data-d="1">+</button></div></div>'+
+    '<div class="stepper"><span class="sub">Modifier</span><div><button class="btn sm" data-act="dm" data-d="-1">−</button><b>'+sg(dMod)+'</b><button class="btn sm" data-act="dm" data-d="1">+</button></div></div></div>'+
+    '<div class="dicegrid">'+dice.map(n=>'<button data-act="dieRoll" data-s="'+n+'">'+dCount+'d'+n+'<small>'+(dMod?sg(dMod):'roll')+'</small></button>').join('')+
+    '<button data-act="d20adv" data-v="a" class="ad">d20<small>advantage</small></button><button data-act="d20adv" data-v="d" class="dd">d20<small>disadvantage</small></button></div>'+
+    '<div class="effrow" style="margin-top:10px"><input id="diceExpr" type="text" placeholder="Any roll, e.g. 2d6+1d4+3" style="flex:1;width:auto"><button class="btn pri" data-act="exprRoll">Roll</button></div>'+
+    '<div class="sub" style="margin-top:14px">Rest</div>'+restRow()+
+    '<button class="btn ghost" style="width:100%;margin-top:10px" data-act="close">Close</button>';
+  openSheet(h);
+}
+function vPlay(){
+  const mx=hpMaxV(); const pct=Math.max(0,Math.min(100,S.hp/mx*100));
+  let h='<div class="card"><div class="hp"><div class="big">'+S.hp+'<small> / '+mx+(S.temp?' · +'+S.temp+' temp':'')+'</small></div></div>'+
+    '<div class="bar"><i style="width:'+pct+'%;background:'+(pct<30?'var(--bad)':pct<60?'var(--acc2)':'var(--good)')+'"></i></div>'+
+    '<div class="hpctl"><input id="hpAmt" type="number" inputmode="numeric" placeholder="0"><button class="btn warn" data-act="hp" data-k="dmg">Damage</button><button class="btn" data-act="hp" data-k="heal">Heal</button><button class="btn" data-act="hp" data-k="temp">Temp</button></div></div>';
+  h+=restRow()+'<button class="btn" style="width:100%;margin-top:8px" data-act="levelUp">⬆ Level up</button>';
+  h+='<div class="card"><div class="grid g3">'+
+    '<div class="stat"><div class="k">AC</div><div class="v">'+acV()+'</div></div>'+
+    '<button class="stat" data-act="init"><div class="k">Initiative</div><div class="v">'+sg(initV())+'</div></button>'+
+    '<div class="stat"><div class="k">Speed</div><div class="v">'+speedV()+'</div></div></div>'+
+    '<div class="sub" style="margin-top:8px;text-align:center">Proficiency '+sg(prof())+(S.castAbility!=='none'?' · Spell DC '+dcV()+' · Spell attack '+sg(satkV()):'')+'</div></div>';
+  h+='<div class="card"><h2>Abilities</h2><div class="grid g6">'+ABIL.map(a=>'<button class="stat" data-act="abil" data-a="'+a+'"><div class="k">'+ABN[a]+'</div><div class="v">'+sg(am(a))+'</div><div class="s">'+score(a)+'</div></button>').join('')+'</div></div>';
+  h+='<div class="card"><h2>Saving throws</h2><div class="grid g3">'+ABIL.map(a=>'<button class="row" data-act="save1" data-a="'+a+'" style="margin:0"><span class="dot '+(S.saveProf[a]?'p':'')+'"></span><span class="nm">'+ABN[a]+'</span><span class="bn">'+sg(saveB(a))+'</span></button>').join('')+'</div></div>';
+  if(S.attacks.length) h+='<div class="card"><h2>Attacks</h2>'+S.attacks.map(w=>'<button class="row" data-act="atk" data-id="'+w.id+'"><span class="nm"><b>'+esc(w.name)+'</b><div class="meta">'+esc(w.dmg)+(wFlat(w)?sg(wFlat(w)):'')+' '+esc(typeShow(w.dmgType))+(w.extra||[]).filter(x=>x.dmg).map(x=>' + '+esc(x.dmg)+' '+esc(typeShow(x.type))).join('')+diceOf('dmg',w.id).map(x=>' + '+esc(x.e.value)+' '+esc(x.e.dtype&&x.e.dtype.includes(',')?'random type':(x.e.dtype||''))).join('')+'</div></span><span class="bn">'+sg(wHit(w))+'</span></button>').join('')+'</div>';
+  const selfP=S.powers.filter(p=>p.attach==='self');
+  if(selfP.length){ const g={}; selfP.forEach(p=>{ (g[p.group||'Actions']=g[p.group||'Actions']||[]).push(p); });
+    h+='<div class="card"><h2>Class actions</h2>'+Object.keys(g).map(k=>'<div class="lvhead">'+esc(k)+'</div>'+g[k].map(p=>'<div class="res"><span class="nm"><b>'+esc(p.name)+'</b><div class="meta">'+esc(pCostLabel(p))+'</div></span><button class="btn sm pri" data-act="pUse" data-id="'+p.id+'">Use</button></div>').join('')).join('')+'</div>'; }
+  h+='<div class="card"><h2>Resources</h2>'+hdPools().map(p=>'<div class="res"><span class="nm">Hit Dice '+p.die+'<div class="meta">CON '+sg(am('con'))+' each · '+(S.hdFullRest?'all':'half your level')+' back on a long rest</div></span>'+
+    '<button class="btn sm" data-act="hdBack" data-d="'+p.die+'">+</button><span class="ct">'+(p.max-p.used)+'/'+p.max+'</span><button class="btn sm pri" data-act="hdUse" data-d="'+p.die+'" '+(p.used>=p.max?'disabled':'')+'>Spend</button></div>').join('')+(S.resources.length?S.resources.map(r=>'<div class="res"><span class="nm">'+esc(r.name)+'<div class="meta">'+(r.reset==='none'?'manual':r.reset+' rest')+(r.die?' · '+esc(r.die):'')+'</div></span>'+
+    '<button class="btn sm" data-act="rdec" data-id="'+r.id+'">−</button><span class="ct">'+r.cur+'/'+r.max+'</span><button class="btn sm" data-act="rinc" data-id="'+r.id+'">+</button>'+
+    (r.die?'<button class="btn sm pri" data-act="ruse" data-id="'+r.id+'" '+(r.cur<=0?'disabled':'')+'>Use</button>':'')+'</div>').join(''):'<div class="empty">Add superiority dice, sorcery points, ki, rages etc. in Setup.</div>')+
+    '</div>';
+  h+='<div class="card"><h2>Skills</h2><div class="cols2">'+SKILLS.map(s=>{ const lv=skillLv(s[0]); return '<button class="row" data-act="skill" data-s="'+esc(s[0])+'"><span class="dot '+(lv>=2?'e':lv>=1?'p':'')+'"></span><span class="nm">'+s[0]+' <span class="sub">'+ABN[s[1]]+'</span></span><span class="bn">'+sg(skillB(s[0],s[1]))+'</span></button>'; }).join('')+'</div></div>';
+  if(S.notes) h+='<div class="card"><h2>Notes</h2><div class="note">'+esc(S.notes)+'</div></div>';
+  return h;
+}
+function vSpells(){
+  let h='<div class="card"><div class="grid g3"><div class="stat"><div class="k">Save DC</div><div class="v">'+dcV()+'</div></div><div class="stat"><div class="k">Spell atk</div><div class="v">'+sg(satkV())+'</div></div><div class="stat"><div class="k">Ability</div><div class="v">'+(S.castAbility==='none'?'—':ABN[S.castAbility])+'</div></div></div>';
+  let any=false;
+  for(let L=1;L<=9;L++){ const sl=S.slots[L]; if(!sl.max) continue; any=true;
+    h+='<div class="slotrow"><span class="lv">Lv '+L+'</span><div class="pips">';
+    for(let i=0;i<sl.max;i++) h+='<button class="pip '+(i>=sl.max-sl.used?'used':'')+'" data-act="pip" data-l="'+L+'" data-i="'+i+'" aria-label="slot"></button>';
+    h+='</div></div>'; }
+  if(S.pact.max){ any=true; h+='<div class="slotrow"><span class="lv">Pact '+S.pact.level+'</span><div class="pips">';
+    for(let i=0;i<S.pact.max;i++) h+='<button class="pip pact '+(i>=S.pact.max-S.pact.used?'used':'')+'" data-act="pip" data-l="pact" data-i="'+i+'" aria-label="pact slot"></button>';
+    h+='</div></div>'; }
+  if(!any) h+='<div class="empty" style="margin-top:8px">No spell slots set. Add them in Setup.</div>';
+  h+='<div class="hint">Tap a slot to mark it used or restore it.</div></div>';
+  if(!S.spells.length) return h+'<div class="card"><div class="empty">No spells yet. Add them in Setup.</div></div>';
+  const ready=S.spells.filter(s=>s.prep!=='unprepared'), off=S.spells.filter(s=>s.prep==='unprepared');
+  const card=sp=>{
+    const L=Number(sp.level);
+    const bits=[]; if(sp.mode==='attack') bits.push('Attack '+sg(atkFor(sp))); if(sp.mode==='save') bits.push(ABN[sp.saveStat]+' save DC '+dcFor(sp));
+    if(sp.dmg) bits.push((L===0&&sp.cantripScale?scale(sp.dmg,tier(),false):sp.dmg)+' '+(sp.dmgType||'')); if(sp.upDice&&L>0) bits.push('+'+sp.upDice+'/level');
+    if(sp.ability&&sp.ability!=='default') bits.push('uses '+ABN[sp.ability]);
+    const tags=(sp.prep==='always'?'<span class="tag">Always prepared</span>':'')+(sp.source?'<span class="tag">'+esc(sp.source)+'</span>':'')+
+      (Number(sp.free)>0?'<span class="tag">Free '+(sp.free-(sp.freeUsed||0))+'/'+sp.free+'</span>':'');
+    const pbtn=(sp.prep==='prepared'||sp.prep==='unprepared')?'<button class="btn sm ghost" data-act="prep" data-id="'+sp.id+'">'+(sp.prep==='prepared'?'Unprepare':'Prepare')+'</button>':'';
+    return '<div class="spell" style="'+(sp.prep==='unprepared'?'opacity:.6':'')+'"><div class="t"><b>'+esc(sp.name)+'</b>'+pbtn+(sp.prep==='unprepared'?'':'<button class="btn sm pri" data-act="cast" data-id="'+sp.id+'">Cast</button>')+'</div><div class="meta">'+esc(bits.join(' · '))+'</div>'+tags+(sp.notes?'<div class="note">'+esc(sp.notes)+'</div>':'')+'</div>';
+  };
+  const group=list=>{ const by={}; list.forEach(s=>{ (by[s.level]=by[s.level]||[]).push(s); }); let g='';
+    Object.keys(by).map(Number).sort((a,b)=>a-b).forEach(L=>{ g+='<div class="lvhead">'+(L===0?'Cantrips':'Level '+L)+'</div>'+by[L].map(card).join(''); }); return g; };
+  h+='<div class="card">'+(ready.length?group(ready):'<div class="empty">Nothing prepared.</div>')+'</div>';
+  if(off.length) h+='<div class="card"><h2>Not prepared</h2>'+group(off)+'</div>';
+  return h;
+}
+function effText(e){ const v=isDice(e.value)||/[a-z]/i.test(String(e.value))?'+'+e.value+(isDice(e.value)?'':' ('+sg(numVal(e))+')'):sg(Number(e.value)||0); const w=e.scope?S.attacks.find(a=>a.id===e.scope):null;
+  return v+' '+(TNAME[e.target]||e.target)+(w?' ('+w.name+' only)':'')+(e.dtype?' — '+e.dtype:''); }
+function vFeatures(){
+  if(!S.features.length) return '<div class="card"><div class="empty">No features or items yet. Add class abilities, homebrew items and DM gifts in Setup.</div></div>';
+  return S.features.map(f=>'<div class="card"><div class="t" style="display:flex;align-items:center;gap:10px"><h2 style="flex:1;margin:0">'+esc(f.name)+'</h2>'+
+    (f.effects.length?'<button class="switch '+(f.active?'on':'')+'" data-act="ftog" data-id="'+f.id+'" aria-label="active"></button>':'')+'</div>'+
+    (f.text?'<div class="note">'+esc(f.text)+'</div>':'')+f.effects.map(e=>'<span class="tag" style="'+(f.active?'':'opacity:.4')+'">'+esc(effText(e))+'</span>').join('')+'</div>').join('');
+}
+function vBag(){
+  let h='<div class="card"><h2>Money</h2><div class="hpctl" style="margin-bottom:6px"><input id="curAmt" type="number" inputmode="numeric" placeholder="1"><span class="sub" style="align-self:center">amount for − / +</span></div>'+
+    (S.currency.length?S.currency.map(c=>'<div class="res"><span class="nm"><b>'+esc(c.name)+'</b></span><button class="btn sm" data-act="cur" data-d="-1" data-id="'+c.id+'">−</button><span class="ct" style="min-width:60px">'+c.amt+'</span><button class="btn sm" data-act="cur" data-d="1" data-id="'+c.id+'">+</button></div>').join(''):'<div class="empty">No currencies. Add them in Setup.</div>')+
+    '<div class="hint">Rename currencies or add your own (gems, guild marks…) in Setup.</div></div>';
+  h+='<div class="card"><h2>Inventory</h2>'+S.items.map((it,i)=>'<div class="ed"><div class="hd"><input type="text" data-bind="items.'+i+'.name" value="'+esc(it.name)+'" placeholder="Item" style="flex:1">'+
+    '<button class="btn sm" data-act="qty" data-d="-1" data-id="'+it.id+'">−</button><span class="ct" style="min-width:30px;text-align:center;font-weight:700">'+it.qty+'</span><button class="btn sm" data-act="qty" data-d="1" data-id="'+it.id+'">+</button></div>'+
+    '<div class="effrow"><input type="text" data-bind="items.'+i+'.notes" value="'+esc(it.notes)+'" placeholder="Notes" style="flex:1;width:auto">'+delBtn('items',it.id)+'</div></div>').join('')+
+    '<button class="btn" style="margin-top:8px" data-act="add" data-list="items">+ Add item</button><div class="hint">Items that change your numbers (+1 AC, +2 DC…) go under Features in Setup so the bonus applies.</div></div>';
+  return h;
+}
+const BIOF=[['race','Race / species'],['background','Background'],['alignment','Alignment'],['age','Age'],['height','Height'],['weight','Weight'],['eyes','Eyes'],['skin','Skin'],['hair','Hair']];
+const BIOT=[['appearance','Appearance'],['personality','Personality traits'],['ideals','Ideals'],['bonds','Bonds'],['flaws','Flaws'],['backstory','Backstory'],['allies','Allies & organisations'],['treasure','Treasure']];
+function vBio(){
+  let h='<div class="card" style="text-align:center">'+(S.portrait?'<img class="portrait" src="'+S.portrait+'" alt="Character portrait">':'<div class="empty">No portrait yet.</div>')+
+    '<label class="btn" style="display:inline-block;margin-top:10px">'+(S.portrait?'Change photo':'Add photo')+'<input type="file" id="portraitIn" accept="image/*" style="display:none"></label>'+
+    (S.portrait?' <button class="btn warn" style="margin-top:10px" data-act="rmPortrait" data-confirm>Remove</button>':'')+'</div>';
+  h+='<div class="card"><h2>Details</h2><div class="grid g3">'+BIOF.map(f=>fT('bio.'+f[0],f[1],S.bio[f[0]]||'')).join('')+'</div></div>';
+  h+='<div class="card"><h2>Story</h2>'+BIOT.map(f=>fA('bio.'+f[0],f[1],S.bio[f[0]]||'')).join('')+'</div>';
+  return h;
+}
+function loadPortrait(file){
+  if(!file) return; const url=URL.createObjectURL(file); const img=new Image();
+  img.onload=()=>{ const M=640; let w=img.naturalWidth,h=img.naturalHeight; const k=Math.min(1,M/Math.max(w,h)); w=Math.round(w*k); h=Math.round(h*k);
+    const c=document.createElement('canvas'); c.width=w; c.height=h; c.getContext('2d').drawImage(img,0,0,w,h);
+    S.portrait=c.toDataURL('image/jpeg',0.82); URL.revokeObjectURL(url); touch(); render(); toast(CAN_PUBLISH?'Photo added — tap Save to keep it in the page':'Photo added'); };
+  img.onerror=()=>toast('Couldn\'t read that image');
+  img.src=url;
+}
+function vChars(){
+  let h='<div class="card"><h2>Your characters</h2>'+CHARS.map(c=>{ const on=c===S; const mx=c.hpMax;
+    return '<div class="charcard'+(on?' on':'')+'">'+(c.portrait?'<img class="thumb" src="'+c.portrait+'" alt="">':'<div class="thumb ph">'+esc((c.name||'?').trim().charAt(0).toUpperCase())+'</div>')+
+      '<div class="ci"><b>'+esc(c.name||'Unnamed')+'</b><div class="meta">'+(c.classes&&c.classes.length?esc(c.cls)+' · Level '+c.level:'No class yet')+'</div><div class="meta">HP '+c.hp+'/'+mx+' · AC '+c.ac+(c.bio&&c.bio.race?' · '+esc(c.bio.race):'')+'</div></div>'+
+      (on?'<span class="tag">Playing</span>':'<button class="btn sm pri" data-act="switchChar" data-c="'+c.cid+'">Play</button>')+'</div>'+
+      '<div class="charbtns"><button class="btn sm ghost" data-act="dupChar" data-c="'+c.cid+'">Duplicate</button><button class="btn sm ghost" data-act="exportChar" data-c="'+c.cid+'">Export</button>'+
+      (CHARS.length>1?'<button class="btn sm warn" data-act="delChar" data-c="'+c.cid+'" data-confirm>Delete</button>':'')+'</div>'; }).join('')+'</div>';
+  h+='<div class="card"><h2>Create a new character</h2><label class="f"><span>Name</span><input id="ncName" type="text" placeholder="e.g. Pip Thistlewick"></label>'+
+    '<button class="btn pri" style="width:100%;margin-top:10px" data-act="newChar">Create & choose starting class</button>'+
+    '<div class="hint">Then fill in ability scores, AC and the rest in Setup. Level up adds classes, HP, slots and resources for you.</div>'+
+    '<div class="grid g2" style="margin-top:12px"><button class="btn" data-act="loadEx">Add example character</button><button class="btn" data-act="importOpen">Import from backup</button></div></div>';
+  return h;
+}
+function vLog(){
+  if(!LOG.length) return '<div class="card"><div class="empty">Rolls this session show up here.</div></div>';
+  return '<div class="card log">'+LOG.map(r=>'<div class="row"><b>'+esc(r.title)+'</b> <span class="sub">'+r.t+'</span><div class="meta">'+r.lines.map(l=>esc(l.label)+': <b style="color:var(--ink)">'+esc(l.big)+'</b> '+esc(l.detail||'')).join('<br>')+'</div></div>').join('')+'</div>';
+}
+
+/* setup form helpers */
+const fN=(p,l,v)=>'<label class="f"><span>'+l+'</span><input type="number" inputmode="numeric" data-bind="'+p+'" data-num value="'+esc(v)+'"></label>';
+const fT=(p,l,v,ph)=>'<label class="f"><span>'+l+'</span><input type="text" data-bind="'+p+'" value="'+esc(v)+'" placeholder="'+esc(ph||'')+'"></label>';
+const fA=(p,l,v)=>'<label class="f"><span>'+l+'</span><textarea data-bind="'+p+'">'+esc(v)+'</textarea></label>';
+const fS=(p,l,v,opts,num)=>'<label class="f"><span>'+l+'</span><select data-bind="'+p+'" '+(num?'data-num':'')+'>'+opts.map(o=>'<option value="'+esc(o[0])+'" '+(String(o[0])===String(v)?'selected':'')+'>'+esc(o[1])+'</option>').join('')+'</select></label>';
+const fC=(p,l,v)=>'<label class="chk"><input type="checkbox" data-bind="'+p+'" '+(v?'checked':'')+'> '+l+'</label>';
+const ABOPT=ABIL.map(a=>[a,ABN[a]]);
+function delBtn(list,id){ return '<button class="btn sm warn" data-act="del" data-list="'+list+'" data-id="'+id+'">Delete</button>'; }
+
+function vSetup(){
+  let h='<div class="card"><h2>Basics</h2>'+fT('name','Name',S.name)+
+    '<button class="btn pri" style="width:100%;margin-top:10px" data-act="levelUp">⬆ Level up (character level '+S.level+')</button>'+
+    '<div class="sub" style="margin-top:12px">Classes</div>'+S.classes.map((c,i)=>'<div class="ed"><div class="hd"><b>'+esc(c.name||'Class')+' '+c.level+'</b>'+(S.classes.length>1?delBtn('classes',c.id):'')+'</div>'+
+      '<div class="grid g2">'+fT('classes.'+i+'.name','Class',c.name,'Fighter')+fT('classes.'+i+'.sub','Subclass',c.sub,'Battle Master')+'</div>'+
+      '<div class="grid g3">'+fN('classes.'+i+'.level','Level',c.level)+fS('classes.'+i+'.hd','Hit die',c.hd,[['d6','d6'],['d8','d8'],['d10','d10'],['d12','d12']])+fS('classes.'+i+'.cast','Spellcasting',c.cast,CAST_OPT)+'</div></div>').join('')+
+    '<button class="btn sm" style="margin-top:8px" data-act="add" data-list="classes">+ Add class (multiclass)</button>'+
+    '<div class="grid g3">'+fN('prof','Prof. bonus',S.prof)+fN('speed','Speed',S.speed)+fN('ac','AC',S.ac)+fN('hpMax','Max HP',S.hpMax)+fN('initBonus','Extra init.',S.initBonus)+'</div>'+fC('hdFullRest','Long rest gives back all hit dice (2024 rules)',S.hdFullRest)+fC('lucky','Halfling Lucky: reroll natural 1s on attacks, checks and saves',S.lucky)+
+    '<div class="hint">Type your own raw numbers. Homebrew bonuses (Features) are added on top automatically.</div></div>';
+  h+='<div class="card"><h2>Ability scores & saves</h2><div class="grid g3">'+ABIL.map(a=>fN('abilities.'+a,ABN[a],S.abilities[a])).join('')+'</div>'+
+    '<div class="grid g3">'+ABIL.map(a=>fC('saveProf.'+a,ABN[a]+' save prof',S.saveProf[a])).join('')+'</div></div>';
+  h+='<div class="card"><h2>Skills</h2><div class="grid g2">'+SKILLS.map(s=>fS('skills.'+s[0],s[0],skillLv(s[0]),[[0,'—'],[0.5,'Half (Jack)'],[1,'Proficient'],[2,'Expertise']],true)).join('')+'</div></div>';
+  h+='<div class="card"><h2>Spellcasting</h2>'+fS('castAbility','Spellcasting ability',S.castAbility,[['none','None']].concat(ABOPT))+
+    '<div class="sub" style="margin-top:8px">Spell slots (max per level)</div><div class="grid g3">';
+  for(let i=1;i<=9;i++) h+=fN('slots.'+i+'.max','Level '+i,S.slots[i].max);
+  h+='</div><div class="sub" style="margin-top:10px">Pact Magic slots (Warlock — come back on a short rest)</div><div class="grid g3">'+fN('pact.max','Pact slots',S.pact.max)+fN('pact.level','Slot level',S.pact.level)+'</div>'+
+    '<button class="btn sm" style="margin-top:10px" data-act="calcSlots">Fill in standard slots from my classes</button>'+
+    fC('pactShortRest','All slots come back on a short rest (homebrew)',S.pactShortRest)+'</div>';
+
+  h+='<div class="card"><h2>Resources</h2>'+S.resources.map((r,i)=>'<div class="ed"><div class="hd"><b>'+esc(r.name||'Resource')+'</b>'+delBtn('resources',r.id)+'</div>'+
+    fT('resources.'+i+'.name','Name',r.name,'Superiority Dice')+'<div class="grid g3">'+fN('resources.'+i+'.max','Max',r.max)+fN('resources.'+i+'.cur','Current',r.cur)+
+    fS('resources.'+i+'.reset','Recovers on',r.reset,[['short','Short rest'],['long','Long rest'],['none','Manual']])+'</div>'+fT('resources.'+i+'.die','Die to roll on use (optional)',r.die,'1d8')+'</div>').join('')+
+    '<button class="btn" style="margin-top:8px" data-act="add" data-list="resources">+ Add resource</button></div>';
+
+  h+='<div class="card"><h2>Attacks</h2>'+S.attacks.map((w,i)=>'<div class="ed"><div class="hd"><b>'+esc(w.name||'Attack')+'</b>'+delBtn('attacks',w.id)+'</div>'+
+    fT('attacks.'+i+'.name','Name',w.name,'Longsword')+'<div class="grid g3">'+fS('attacks.'+i+'.ability','Ability',w.ability,ABOPT.concat([['none','None']]))+fN('attacks.'+i+'.bonus','Magic / extra +',w.bonus)+
+    fT('attacks.'+i+'.dmg','Damage dice',w.dmg,'1d10')+'</div>'+fT('attacks.'+i+'.dmgType','Damage type',w.dmgType,'slashing')+
+    '<div class="sub" style="margin-top:8px">Extra damage (each rolls with its own type)</div>'+(w.extra||[]).map((x,j)=>'<div class="effrow"><input type="text" data-bind="attacks.'+i+'.extra.'+j+'.dmg" value="'+esc(x.dmg)+'" placeholder="1d4"><input type="text" style="flex:1;width:auto" data-bind="attacks.'+i+'.extra.'+j+'.type" value="'+esc(x.type)+'" placeholder="fire · or: elemental (random)"><button class="btn sm warn" data-act="delWx" data-i="'+i+'" data-j="'+j+'">✕</button></div>').join('')+
+    '<button class="btn sm" style="margin-top:6px" data-act="addWx" data-i="'+i+'">+ Add extra damage</button>'+
+    '<div class="hint">Type "elemental" for a random acid/cold/fire/lightning/thunder, "any" for any type, or list your own: "fire, cold".</div>'+
+    fC('attacks.'+i+'.prof','Proficient',w.prof)+fC('attacks.'+i+'.addMod','Add ability mod to damage',w.addMod)+fA('attacks.'+i+'.notes','Notes',w.notes)+'</div>').join('')+
+    '<button class="btn" style="margin-top:8px" data-act="add" data-list="attacks">+ Add attack</button></div>';
+
+  h+='<div class="card"><h2>Spells</h2>'+S.spells.map((s,i)=>'<div class="ed"><div class="hd"><b>'+esc(s.name||'Spell')+'</b>'+delBtn('spells',s.id)+'</div>'+
+    fT('spells.'+i+'.name','Name',s.name,'Fireball')+'<div class="grid g3">'+fS('spells.'+i+'.level','Level',s.level,[[0,'Cantrip'],[1,'1'],[2,'2'],[3,'3'],[4,'4'],[5,'5'],[6,'6'],[7,'7'],[8,'8'],[9,'9']],true)+
+    fS('spells.'+i+'.mode','Roll type',s.mode,[['attack','Attack roll'],['save','Saving throw'],['none','Neither']])+fS('spells.'+i+'.saveStat','Save stat',s.saveStat,ABOPT)+'</div>'+
+    '<div class="grid g3">'+fT('spells.'+i+'.dmg','Damage / healing',s.dmg,'8d6')+fT('spells.'+i+'.dmgType','Type',s.dmgType,'fire / healing')+fT('spells.'+i+'.upDice','Extra per level up',s.upDice,'1d6')+'</div>'+
+    fC('spells.'+i+'.cantripScale','Cantrip: scale dice at levels 5, 11, 17',s.cantripScale)+fC('spells.'+i+'.halfOnSave','Half damage on a successful save',s.halfOnSave)+fC('spells.'+i+'.addMod','Add spellcasting mod to damage/healing',s.addMod)+
+    '<div class="grid g3">'+fS('spells.'+i+'.prep','Status',s.prep,PREP)+fS('spells.'+i+'.ability','Casting stat',s.ability,[['default','Character default']].concat(ABOPT))+fN('spells.'+i+'.free','Free casts / long rest',s.free)+'</div>'+
+    fT('spells.'+i+'.source','Source tag (optional)',s.source,'Ring of Embers, DM gift, feat…')+
+    fA('spells.'+i+'.notes','Notes',s.notes)+'</div>').join('')+
+    '<button class="btn" style="margin-top:8px" data-act="add" data-list="spells">+ Add spell</button></div>';
+
+  const RESOPT=[['','No cost'],['slot','Spell slot (lowest open)']].concat(S.resources.map(r=>[r.id,r.name||'(unnamed)']));
+  const FOPT=[['','—']].concat(S.features.map(f=>[f.id,f.name||'(unnamed)']));
+  h+='<div class="card"><h2>Class options</h2><div class="hint">Metamagic, maneuvers, ki, rage, smites — anything that spends a resource. "When casting" options appear on the Cast button, "when attacking" on your attacks, and "on its own" ones get a Use button on Play.</div>'+
+    '<button class="btn pri" style="width:100%;margin-top:8px" data-act="lib">📚 Add from library</button>'+
+    S.powers.map((p,i)=>'<div class="ed"><div class="hd"><b>'+esc(p.name||'Option')+'</b><span class="sub">'+esc(p.group)+'</span>'+delBtn('powers',p.id)+'</div>'+
+    '<div class="grid g2">'+fT('powers.'+i+'.name','Name',p.name,'Trip Attack')+fT('powers.'+i+'.group','Group',p.group,'Maneuvers')+'</div>'+
+    fS('powers.'+i+'.attach','Used',p.attach,[['spell','When casting a spell'],['attack','When attacking'],['self','On its own (button on Play)']])+
+    '<div class="grid g3">'+fS('powers.'+i+'.res','Paid with',p.res,RESOPT)+fS('powers.'+i+'.costType','Cost',p.costType,[['fixed','Fixed amount'],['level','= spell level'],['levelMin1','= spell level (min 1)']])+fN('powers.'+i+'.cost','Amount',p.cost)+'</div>'+
+    '<div class="grid g2">'+fT('powers.'+i+'.dmg','Extra damage / roll',p.dmg,'die  ·  1d6+cha')+fT('powers.'+i+'.rollLabel','Roll label (on its own)',p.rollLabel,'Temp HP')+'</div>'+
+    fT('powers.'+i+'.hit','Added to attack roll',p.hit,'die')+fC('powers.'+i+'.adv','Gives advantage on the attack',p.adv)+
+    '<div class="grid g2">'+fS('powers.'+i+'.save','Target makes a save',p.save,[['','No save']].concat(ABOPT))+fS('powers.'+i+'.dcType','Save DC',p.dcType,[['spell','Spell save DC'],['calc','8 + prof + stat'],['fixed','Fixed number']])+
+    fS('powers.'+i+'.dcStat','DC stat',p.dcStat,ABOPT)+fN('powers.'+i+'.dcFixed','Fixed DC',p.dcFixed)+'</div>'+
+    fS('powers.'+i+'.feat','Switches on a feature',p.feat,FOPT)+fT('powers.'+i+'.note','Reminder shown on the result',p.note)+'</div>').join('')+
+    '<div class="hint">Rolls understand: <b>die</b> (the resource\'s die), <b>str dex con int wis cha</b> (mods), <b>prof</b>, <b>level</b>, class levels like <b>{sorcerer}</b>, <b>slot</b> (slot level used), <b>martial</b> (monk die), <b>sneak</b> (sneak attack dice) and maths in braces, e.g. <b>{ceil(level/2)}d6</b> or <b>{min(slot+1,5)}d8</b>.</div>'+
+    '<button class="btn" style="margin-top:8px" data-act="add" data-list="powers">+ Add your own</button></div>';
+  h+='<div class="card"><h2>Features, items & homebrew</h2><div class="hint">Anything your DM gives you. Add effects for numbers it changes, e.g. +2 Spell save DC, +1 AC, +1 all saves.</div>'+
+    S.features.map((f,i)=>'<div class="ed"><div class="hd"><b>'+esc(f.name||'Feature')+'</b>'+delBtn('features',f.id)+'</div>'+
+    fT('features.'+i+'.name','Name',f.name,'Cloak of Protection')+fA('features.'+i+'.text','What it does',f.text)+fC('features.'+i+'.active','Active (bonuses apply)',f.active)+
+    '<div class="sub" style="margin-top:8px">Effects</div>'+f.effects.map((e,j)=>'<div class="effbox"><div class="effrow"><select data-rerender data-bind="features.'+i+'.effects.'+j+'.target">'+TARGETS.map(t=>'<option value="'+esc(t[0])+'" '+(t[0]===e.target?'selected':'')+'>'+esc(t[1])+'</option>').join('')+'</select>'+
+      '<input type="text" data-bind="features.'+i+'.effects.'+j+'.value" value="'+esc(e.value)+'" placeholder="2 or 1d4"><button class="btn sm warn" data-act="delEff" data-i="'+i+'" data-j="'+j+'">✕</button></div>'+
+      ((e.target==='atk'||e.target==='dmg')?'<label class="f"><span>Applies to</span><select data-bind="features.'+i+'.effects.'+j+'.scope">'+[['','All weapons']].concat(S.attacks.map(a=>[a.id,a.name||'(unnamed)'])).map(o=>'<option value="'+esc(o[0])+'" '+(o[0]===(e.scope||'')?'selected':'')+'>'+esc(o[1])+'</option>').join('')+'</select></label>':'')+
+      ((e.target==='dmg'||e.target==='spellDmg')?fT('features.'+i+'.effects.'+j+'.dtype','Damage type (several, comma-separated = random each hit)',e.dtype||'','fire  ·  acid, cold, fire, lightning, thunder'):'')+'</div>').join('')+
+    '<div class="hint">Value can be a number (+2) or dice (1d4). Dice on damage roll as their own line.</div>'+
+    '<button class="btn sm" style="margin-top:6px" data-act="addEff" data-i="'+i+'">+ Add effect</button></div>').join('')+
+    '<button class="btn" style="margin-top:8px" data-act="add" data-list="features">+ Add feature / item</button></div>';
+
+  h+='<div class="card"><h2>Currencies</h2><div class="hint">Rename, add or remove any currency.</div>'+S.currency.map((c,i)=>'<div class="effrow"><input type="text" data-bind="currency.'+i+'.name" value="'+esc(c.name)+'" style="flex:1;width:auto"><input type="number" inputmode="numeric" data-bind="currency.'+i+'.amt" data-num value="'+c.amt+'" style="width:90px">'+delBtn('currency',c.id)+'</div>').join('')+
+    '<button class="btn" style="margin-top:8px" data-act="add" data-list="currency">+ Add currency</button></div>';
+  h+='<div class="card"><h2>Notes</h2>'+fA('notes','Anything else (shown on Play)',S.notes)+'</div>';
+  h+='<div class="card"><h2>Backup</h2><div class="hint">'+(CAN_PUBLISH?'Changes are kept on this device straight away. Tap Save (top) to store them in the page itself so they survive anywhere.':'Everything saves automatically on this device. Export a backup now and then — if the app is uninstalled or its data cleared, your characters go with it.')+' New characters, switching and imports are on the Chars tab.</div>'+
+    '<button class="btn" style="width:100%;margin-top:10px" data-act="export">Export this character</button></div>'+
+    '<div class="footer">Living Character Sheet · v1.0<br>'+(EDITION==='store'?'<span style="font-size:11px">Includes material from the System Reference Document 5.1 and 5.2 by Wizards of the Coast LLC, licensed under <a href="https://creativecommons.org/licenses/by/4.0/legalcode" target="_blank" rel="noopener" style="color:inherit">CC BY 4.0</a>. Not affiliated with or endorsed by Wizards of the Coast. · <a href="privacy.html" target="_blank" rel="noopener" style="color:inherit">Privacy</a></span><br>':'')+'<button class="linkish" data-act="coffee">☕ buy the dev a coffee</button></div>';
+  return h;
+}
+
+/* ---------- binding ---------- */
+function setPath(path,val){
+  const k=path.split('.'); let o=S;
+  for(let i=0;i<k.length-1;i++){ if(o[k[i]]==null) o[k[i]]={}; o=o[k[i]]; }
+  o[k[k.length-1]]=val;
+}
+app.addEventListener('change',e=>{
+  const el=e.target; if(el.id==='portraitIn'){ loadPortrait(el.files[0]); return; }
+  const p=el.dataset&&el.dataset.bind; if(!p) return;
+  let v=el.type==='checkbox'?el.checked:(el.dataset.num!==undefined?(el.value===''?0:Number(el.value)):el.value);
+  setPath(p,v);
+  if(p==='hpMax'&&S.hp>hpMaxV()) S.hp=hpMaxV();
+  const m=p.match(/^resources\.(\d+)\.max$/); if(m){ const r=S.resources[m[1]]; if(r.cur>r.max) r.cur=r.max; }
+  const sm=p.match(/^slots\.(\d+)\.max$/); if(sm){ const sl=S.slots[sm[1]]; if(sl.used>sl.max) sl.used=sl.max; }
+  touch();
+  if(el.hasAttribute('data-rerender')) render();
+  if(p.startsWith('classes.')){ syncClasses(); }
+  if(p==='name'||p==='cls'||p==='level'||p.startsWith('classes.')){ const w=app.querySelector('.who'); if(w) w.innerHTML='<h1>'+esc(S.name)+'</h1><div class="sub">'+whoLine()+'</div>'; }
+});
+
+let armed=null, armT;
+document.addEventListener('click',e=>{
+  const b=e.target.closest('[data-act]'); if(!b||b.disabled) return;
+  if(b.hasAttribute('data-confirm')||b.dataset.act==='del'){
+    if(armed!==b){ if(armed) armed.textContent=armed.dataset.orig; armed=b; b.dataset.orig=b.textContent; b.textContent='Tap again to confirm'; clearTimeout(armT); armT=setTimeout(()=>{ if(armed){ armed.textContent=armed.dataset.orig; armed=null; } },3000); return; }
+    armed=null; clearTimeout(armT);
+  }
+  const A=b.dataset.act, id=b.dataset.id;
+  switch(A){
+    case 'close': closeSheet(); break;
+    case 'tab': tab=b.dataset.t; render(); window.scrollTo(0,0); break;
+    case 'adv': adv=b.dataset.v; document.querySelectorAll('.adv button').forEach(x=>x.classList.toggle('on',x.dataset.v===adv)); break;
+    case 'save': saveSheet(); break;
+    case 'init': check('Initiative',initV()); break;
+    case 'abil': check(ABN[b.dataset.a]+' check',am(b.dataset.a)); break;
+    case 'save1': check(ABN[b.dataset.a]+' save',saveB(b.dataset.a)); break;
+    case 'skill': { const s=SKILLS.find(x=>x[0]===b.dataset.s); check(s[0],skillB(s[0],s[1])); break; }
+    case 'atk': attackPick(find('attacks',id)); break;
+    case 'atkGo': attack(find('attacks',id),[...pickSel]); break;
+    case 'pUse': usePower(find('powers',id)); break;
+    case 'lib': drawLib(); break;
+    case 'libSrc': libSrc=b.dataset.v; drawLib(); { const nb=sheet.querySelector('.box'); if(nb) nb.scrollTop=0; } break;
+    case 'libAll': { const G=LIB[b.dataset.g]; libCreated=[]; G.items.forEach(it=>{ if(libSrc&&(it.src||'PHB')!==libSrc) return; if(!S.powers.some(p=>p.name===it.name&&p.group===G.g)) addLib(S,it,G.g); }); touch(); drawLib(); render(); libToast(G.g); break; }
+    case 'libOne': { const G=LIB[b.dataset.g]; libCreated=[]; addLib(S,G.items[b.dataset.i],G.g); touch(); drawLib(); render(); libToast(G.items[b.dataset.i].name); break; }
+
+    case 'hp': hpChange(b.dataset.k); break;
+    case 'rest': closeSheet(); rest(b.dataset.k); break;
+    case 'dice': drawDice(); break;
+    case 'dc': dCount=Math.max(1,Math.min(100,dCount+Number(b.dataset.d))); drawDice(); break;
+    case 'dm': dMod=Math.max(-99,Math.min(99,dMod+Number(b.dataset.d))); drawDice(); break;
+    case 'dieRoll': { const ex=dCount+'d'+b.dataset.s; const r=rollExpr(ex,false,dMod); showResult(ex+(dMod?sg(dMod):''),[{label:'Total',big:r.total,detail:r.detail}],'',true); break; }
+    case 'd20adv': { const a=d(20),c=d(20); const keep=b.dataset.v==='a'?Math.max(a,c):Math.min(a,c); showResult('d20 '+(b.dataset.v==='a'?'advantage':'disadvantage'),[{label:'Total',big:keep+dMod,detail:'['+a+', '+c+'] '+(dMod?sg(dMod):''),cls:keep===20?'crit':keep===1?'fumble':''}],'',true); break; }
+    case 'exprRoll': { const ex=document.getElementById('diceExpr').value.trim(); const p=parse(ex); if(!p.dice.length){ toast('Type something like 2d6+3'); break; } const r=rollExpr(ex,false,0); showResult(ex,[{label:'Total',big:r.total,detail:r.detail}],'',true); break; }
+    case 'rdec': { const r=find('resources',id); r.cur=Math.max(0,r.cur-1); touch(); render(); break; }
+    case 'rinc': { const r=find('resources',id); r.cur=Math.min(r.max,r.cur+1); touch(); render(); break; }
+    case 'ruse': { const r=find('resources',id); if(r.cur<=0) break; r.cur--; touch(); render(); const x=rollExpr(r.die,false,0); showResult(r.name,[{label:'Roll',big:x.total,detail:x.detail}],r.cur+'/'+r.max+' left'); break; }
+    case 'pip': { const L=b.dataset.l, i=Number(b.dataset.i), sl=L==='pact'?S.pact:S.slots[L]; if(i<sl.max-sl.used) sl.used++; else sl.used--; sl.used=Math.max(0,Math.min(sl.max,sl.used)); touch(); render(); break; }
+    case 'cast': castPick(find('spells',id)); break;
+    case 'levelUp': openLevelUp(); break;
+    case 'coffee': openCoffee(); break;
+    case 'tip': buyTip(id); break;
+    case 'hdUse': { const k=b.dataset.d; const p=hdPools().find(x=>x.die===k); if(!p||p.used>=p.max) break; S.hdUsed[k]=p.used+1;
+      const r=rollExpr('1'+k,false,am('con')); const before=S.hp; S.hp=Math.min(hpMaxV(),S.hp+r.total); touch(); render();
+      showResult('Hit Die ('+k+')',[{label:'HP regained',big:r.total,detail:r.detail}],'HP '+before+' → '+S.hp+' / '+hpMaxV()+'. '+(p.max-p.used-1)+' '+k+' left.'); break; }
+    case 'hdBack': { const k=b.dataset.d; S.hdUsed[k]=Math.max(0,(Number(S.hdUsed[k])||0)-1); touch(); render(); break; }
+    case 'addWx': { const w=S.attacks[b.dataset.i]; (w.extra=w.extra||[]).push({dmg:'1d4',type:''}); touch(); render(); break; }
+    case 'delWx': S.attacks[b.dataset.i].extra.splice(Number(b.dataset.j),1); touch(); render(); break;
+    case 'luPick': luRead(); LU.pick=id; LU.hp=null; drawLevelUp(); break;
+    case 'luAvg': document.getElementById('luHp').value=b.dataset.v; LU.hp=Number(b.dataset.v); break;
+    case 'luRoll': { const r=d(Number(b.dataset.d)); const v=Math.max(1,r+am('con')); document.getElementById('luHp').value=v; LU.hp=v; toast('Rolled '+r+' '+sg(am('con'))+' CON = '+v); break; }
+    case 'luGo': applyLevelUp(); break;
+    case 'calcSlots': { const ns=slotsFor(S.classes), pp=pactFor(S.classes); for(let i=1;i<=9;i++){ S.slots[i].max=ns[i]; S.slots[i].used=Math.min(S.slots[i].used,ns[i]); } S.pact.max=pp.max; S.pact.level=pp.level; S.pact.used=Math.min(S.pact.used,pp.max); touch(); render(); toast('Slots set from your classes'); break; }
+    case 'castAt': { const sp=find('spells',id); const L=b.dataset.l; const sel=[...pickSel];
+      if(L==='free'||L==='perday'||L==='none') resolveSpell(sp,Number(sp.level),L,sel); else if(L==='pact') resolveSpell(sp,S.pact.level,'pact',sel); else resolveSpell(sp,Number(L),'slot',sel); break; }
+    case 'pk': { if(pickSel.has(id)) pickSel.delete(id); else pickSel.add(id); if(b.dataset.k==='w') drawAtk(find('attacks',b.dataset.o)); else drawPick(find('spells',b.dataset.o)); break; }
+    case 'ftog': { const f=find('features',id); f.active=!f.active; touch(); render(); break; }
+    case 'add': {
+      const L=b.dataset.list; const n={id:uid()};
+      if(L==='resources') Object.assign(n,{name:'',max:1,cur:1,reset:'long',die:''});
+      if(L==='attacks') Object.assign(n,{name:'',ability:'str',prof:true,bonus:0,dmg:'1d6',dmgType:'',addMod:true,notes:'',extra:[]});
+      if(L==='spells') Object.assign(n,SPELL_DEF,{name:''});
+      if(L==='currency') Object.assign(n,{name:'New currency',amt:0});
+      if(L==='items') Object.assign(n,{name:'',qty:1,notes:''});
+      if(L==='classes') Object.assign(n,{name:'',sub:'',level:1,hd:'d8',cast:'none'});
+      if(L==='powers') Object.assign(n,POWER_DEF,{id:n.id,res:(S.resources[0]||{}).id||''});
+      if(L==='features') Object.assign(n,{name:'',text:'',active:true,effects:[]});
+      S[L].push(n); touch(); render(); break; }
+    case 'del': { const L=b.dataset.list; S[L]=S[L].filter(x=>x.id!==id); if(L==='classes') syncClasses(); touch(); render(); break; }
+    case 'addEff': S.features[b.dataset.i].effects.push({target:'ac',value:1}); touch(); render(); break;
+    case 'delEff': S.features[b.dataset.i].effects.splice(Number(b.dataset.j),1); touch(); render(); break;
+    case 'export': exportJSON(); break;
+    case 'copyExp': { const t=document.getElementById('expTxt'); try{ navigator.clipboard.writeText(t.value).then(()=>toast('Copied'),()=>{ t.select(); toast('Select all and copy'); }); }catch(err){ t.select(); } break; }
+    case 'importOpen': openSheet('<h3>Import</h3><div class="sub">Pick a backup file, or paste backup text. It\'s added as a new character — nothing is replaced.</div><input type="file" id="impFile" accept=".json,application/json,text/plain" style="margin-top:8px"><textarea id="impTxt" placeholder="…or paste here" style="margin-top:8px;min-height:140px"></textarea><button class="btn pri" style="width:100%;margin-top:8px" data-act="impGo">Import</button>'); break;
+    case 'impGo': { const f=document.getElementById('impFile').files[0]; if(f){ f.text().then(importText); } else importText(document.getElementById('impTxt').value); break; }
+    case 'newChar': { const n=blank(); n.cid=uid(); n.name=(document.getElementById('ncName')||{}).value||'New Character'; CHARS.push(n); S=n; touch(); tab='play'; render(); openLevelUp(); break; }
+    case 'switchChar': { const c=CHARS.find(x=>x.cid===b.dataset.c); if(c){ S=c; LU=null; pickSel=new Set(); touch(); tab='play'; render(); window.scrollTo(0,0); toast('Now playing '+S.name); } break; }
+    case 'dupChar': { const c=CHARS.find(x=>x.cid===b.dataset.c); const n=normalize(JSON.parse(JSON.stringify(c))); n.cid=uid(); n.name=(c.name||'Character')+' (copy)'; CHARS.push(n); touch(); render(); toast('Copied '+c.name); break; }
+    case 'delChar': { if(CHARS.length<2) break; const i=CHARS.findIndex(x=>x.cid===b.dataset.c); const gone=CHARS.splice(i,1)[0]; if(S===gone) S=CHARS[0]; touch(); render(); toast('Deleted '+gone.name); break; }
+    case 'exportChar': { const c=CHARS.find(x=>x.cid===b.dataset.c); exportJSON(c); break; }
+    case 'cur': { const c=find('currency',id); const a=Math.abs(Number(document.getElementById('curAmt').value))||1; c.amt=(Number(c.amt)||0)+a*Number(b.dataset.d); touch(); render(); break; }
+    case 'qty': { const it=find('items',id); it.qty=Math.max(0,(Number(it.qty)||0)+Number(b.dataset.d)); touch(); render(); break; }
+    case 'prep': { const sp=find('spells',id); sp.prep=sp.prep==='prepared'?'unprepared':'prepared'; touch(); render(); break; }
+    case 'rmPortrait': S.portrait=''; touch(); render(); break;
+    case 'loadEx': { const n=example(); n.cid=uid(); CHARS.push(n); S=n; touch(); tab='play'; render(); toast('Example character added'); break; }
+  }
+});
+render();
+if(EDITION==='store'&&!window.claude&&'serviceWorker' in navigator){ try{ navigator.serviceWorker.register('sw.js').catch(()=>{}); }catch(e){} }
+})();
+</script>
+</body>
+</html>
